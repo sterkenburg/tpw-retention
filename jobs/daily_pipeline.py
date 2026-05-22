@@ -119,7 +119,7 @@ def run():
         "days_since_last_login", "estimated_value_30d",
         "contract_views_total", "contract_leads_total",
         "category_avg_views_60d", "category_avg_leads_60d",
-        "already_renewed",
+        "renewal_status",
         "benchmark_views_top10pct", "benchmark_leads_top10pct",
         "churn_probability", "priority_tier", "risk_factors",
         "recommended_action", "stats_date",

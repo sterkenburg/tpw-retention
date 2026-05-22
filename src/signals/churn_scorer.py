@@ -53,9 +53,12 @@ def _calculate_raw_score(row: pd.Series) -> float:
     if row.get("days_until_renewal", 999) < 30:
         score += 0.10
 
-    # Already renewed = strong signal they are staying
-    if row.get("already_renewed", False):
+    # Renewal status affects churn score
+    renewal_status = row.get("renewal_status", "active")
+    if renewal_status == "already_renewed":
         score -= 0.35
+    elif renewal_status == "will_churn":
+        score = 1.0
 
     # Higher-value plans slightly more likely to churn (or more worth saving)
     score += row.get("plan_value", 500) * 0.00002
@@ -104,8 +107,11 @@ def calculate(stats: pd.DataFrame) -> pd.DataFrame:
             factors.append("Declining engagement")
         if row.get("days_until_renewal", 999) < 30:
             factors.append("Renewal approaching")
-        if row.get("already_renewed", False):
+        renewal_status = row.get("renewal_status", "active")
+        if renewal_status == "already_renewed":
             factors.append("Already renewed")
+        elif renewal_status == "will_churn":
+            factors.append("Will churn")
         return ", ".join(factors) if factors else "Stable"
 
     df["risk_factors"] = df.apply(_risk_factors, axis=1)
@@ -113,7 +119,10 @@ def calculate(stats: pd.DataFrame) -> pd.DataFrame:
     # Recommended action
     def _action(row: pd.Series) -> str:
         tier = row.get("priority_tier", "P4")
-        if row.get("already_renewed", False):
+        renewal_status = row.get("renewal_status", "active")
+        if renewal_status == "will_churn":
+            return "WILL CHURN: Exit interview, learn why"
+        if renewal_status == "already_renewed":
             if tier == "P1":
                 return "RENEWED but at-risk: Monitor engagement, check-in call"
             return "RENEWED: Monitor engagement"

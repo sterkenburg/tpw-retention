@@ -59,9 +59,14 @@ export function SupplierTable({ suppliers }: { suppliers: SupplierStats[] }) {
               <td className="px-4 py-3 whitespace-nowrap">
                 <div className="flex items-center gap-2">
                   <TierBadge tier={s.priority_tier} />
-                  {s.already_renewed && (
+                  {s.renewal_status === "already_renewed" && (
                     <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">
                       Renewed
+                    </span>
+                  )}
+                  {s.renewal_status === "will_churn" && (
+                    <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-medium">
+                      Will churn
                     </span>
                   )}
                 </div>

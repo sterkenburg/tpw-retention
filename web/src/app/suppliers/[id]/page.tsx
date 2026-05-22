@@ -51,9 +51,14 @@ export default async function SupplierPage({
                 {supplier.profile_name}
               </h1>
               <TierBadge tier={supplier.priority_tier} />
-              {supplier.already_renewed && (
+              {supplier.renewal_status === "already_renewed" && (
                 <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
                   Already renewed
+                </span>
+              )}
+              {supplier.renewal_status === "will_churn" && (
+                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
+                  Will churn
                 </span>
               )}
             </div>

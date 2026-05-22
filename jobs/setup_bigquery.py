@@ -54,7 +54,7 @@ tables = {
         contract_leads_total INT64,
         category_avg_views_60d FLOAT64,
         category_avg_leads_60d FLOAT64,
-        already_renewed BOOLEAN,
+        renewal_status STRING,
         churn_probability FLOAT64,
         priority_tier STRING,
         risk_factors STRING,
