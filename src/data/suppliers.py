@@ -63,12 +63,6 @@ def get_current() -> pd.DataFrame:
         CASE
             WHEN np.next_plan_name = 'Gratis' THEN 'will_churn'
             WHEN np.next_plan_name IS NOT NULL AND np.next_plan_name != 'Gratis' THEN 'already_renewed'
-            WHEN EXISTS(
-                SELECT 1 FROM `{_BUSINESS_TABLE}` b2
-                WHERE b2.profile_id = b.profile_id
-                  AND b2.plan_name != 'Gratis'
-                  AND b2.plan_end < b.plan_end
-            ) THEN 'already_renewed'
             ELSE 'active'
         END AS renewal_status
     FROM latest_plan b
