@@ -45,33 +45,36 @@ def get_contract_period_views(suppliers_df: pd.DataFrame) -> pd.DataFrame:
     if suppliers_df.empty:
         return pd.DataFrame(columns=["profile_id", "contract_views_total"])
 
-    values = []
-    for _, row in suppliers_df.iterrows():
-        pid = int(row["profile_id"])
-        plan_start = row["plan_start"].strftime("%Y-%m-%d") if pd.notna(row["plan_start"]) else "1900-01-01"
-        values.append(f"STRUCT({pid} AS profile_id, DATE('{plan_start}') AS plan_start)")
+    min_plan_start = suppliers_df["plan_start"].min()
+    start_date = min_plan_start.strftime("%Y-%m-%d") if pd.notna(min_plan_start) else "2020-01-01"
 
-    if not values:
+    ids = [int(pid) for pid in suppliers_df["profile_id"].unique() if str(pid).isdigit()]
+    if not ids:
         return pd.DataFrame(columns=["profile_id", "contract_views_total"])
 
-    values_str = ",\n        ".join(values)
+    id_list = ",".join(repr(str(i)) for i in ids)
 
     sql = f"""
-    WITH supplier_periods AS (
-        SELECT * FROM UNNEST([
-            {values_str}
-        ])
-    )
     SELECT
-        CAST(a.profile_id AS STRING) AS profile_id,
-        COUNT(*) AS contract_views_total
-    FROM `{_PROCESSED_TABLE}` a
-    INNER JOIN supplier_periods s
-        ON a.profile_id = s.profile_id
-    WHERE a.event_date >= s.plan_start
-    GROUP BY profile_id
+        CAST(profile_id AS STRING) AS profile_id,
+        event_date
+    FROM `{_PROCESSED_TABLE}`
+    WHERE event_date >= '{start_date}'
+      AND CAST(profile_id AS STRING) IN ({id_list})
     """
-    return query(sql)
+    df = query(sql)
+    if df.empty:
+        return pd.DataFrame(columns=["profile_id", "contract_views_total"])
+
+    df["event_date"] = pd.to_datetime(df["event_date"], errors="coerce")
+    suppliers_df = suppliers_df[["profile_id", "plan_start"]].copy()
+    suppliers_df["plan_start"] = pd.to_datetime(suppliers_df["plan_start"], errors="coerce")
+
+    merged = df.merge(suppliers_df, on="profile_id", how="left")
+    valid = merged[merged["event_date"] >= merged["plan_start"]]
+
+    counts = valid.groupby("profile_id").size().rename("contract_views_total").reset_index()
+    return counts
 
 
 def get_profile_views(profile_ids: list[str], days: int = 30) -> pd.DataFrame:
