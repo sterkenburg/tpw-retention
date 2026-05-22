@@ -74,6 +74,7 @@ export type SupplierStats = {
   contract_leads_total: number;
   category_avg_views_30d: number | null;
   category_avg_leads_30d: number | null;
+  already_renewed: boolean | null;
   churn_probability: number;
   priority_tier: string;
   risk_factors: string;

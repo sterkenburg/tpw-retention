@@ -31,7 +31,15 @@ def get_current() -> pd.DataFrame:
         b.num_paid_plans_before,
         b.next_plan_comparison,
         b.converted_lead,
-        p.profile_telephone AS phone
+        p.profile_telephone AS phone,
+        -- Already renewed = has another paid plan that ends before this one
+        EXISTS(
+            SELECT 1
+            FROM `{_BUSINESS_TABLE}` b2
+            WHERE b2.profile_id = b.profile_id
+              AND b2.plan_name != 'Gratis'
+              AND b2.plan_end < b.plan_end
+        ) AS already_renewed
     FROM `{_BUSINESS_TABLE}` b
     LEFT JOIN `{_PROFILES_TABLE}` p
         ON b.profile_id = p.profile_id

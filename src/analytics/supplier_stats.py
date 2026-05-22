@@ -144,6 +144,7 @@ def calculate(
         "contract_leads_total",
         "category_avg_views_30d",
         "category_avg_leads_30d",
+        "already_renewed",
         "num_paid_plans_before",
         "stats_date",
     ]

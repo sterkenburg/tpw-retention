@@ -69,7 +69,14 @@ export function SupplierTable({ suppliers }: { suppliers: SupplierStats[] }) {
               className="hover:bg-gray-50 transition-colors"
             >
               <td className="px-4 py-3 whitespace-nowrap">
-                <TierBadge tier={s.priority_tier} />
+                <div className="flex items-center gap-2">
+                  <TierBadge tier={s.priority_tier} />
+                  {s.already_renewed && (
+                    <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">
+                      Renewed
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-4 py-3">
                 <Link
