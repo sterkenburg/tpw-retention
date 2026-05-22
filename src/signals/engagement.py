@@ -10,7 +10,7 @@ def detect_decline(stats: pd.DataFrame, threshold: float = -0.5) -> pd.DataFrame
     """
     declining = stats[
         (stats["engagement_trend"] <= threshold)
-        & (stats["profile_views_30d"] < stats["profile_views_30_60d"])
+        & (stats["profile_views_60d"] < stats["profile_views_60_90d"])
     ].copy()
     declining["signal_type"] = "engagement_decline"
     declining["signal_severity"] = declining["engagement_trend"].apply(

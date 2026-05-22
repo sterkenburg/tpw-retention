@@ -20,37 +20,37 @@ def calculate(
     today = pd.Timestamp.now().normalize()
     df = suppliers.copy()
 
-    # --- GA4 activity (last 30d) ---
-    activity_30d = activity[activity["event_date"] >= today - pd.Timedelta(days=30)]
-    views_30d = (
-        activity_30d.groupby("profile_id")
+    # --- GA4 activity (last 60d) ---
+    activity_60d = activity[activity["event_date"] >= today - pd.Timedelta(days=60)]
+    views_60d = (
+        activity_60d.groupby("profile_id")
         .size()
-        .rename("profile_views_30d")
+        .rename("profile_views_60d")
     )
 
-    # GA4 activity (previous 30-60d) for trend
-    activity_30_60d = activity[
-        (activity["event_date"] >= today - pd.Timedelta(days=60))
-        & (activity["event_date"] < today - pd.Timedelta(days=30))
+    # GA4 activity (previous 60-90d) for trend
+    activity_60_90d = activity[
+        (activity["event_date"] >= today - pd.Timedelta(days=90))
+        & (activity["event_date"] < today - pd.Timedelta(days=60))
     ]
-    views_30_60d = (
-        activity_30_60d.groupby("profile_id")
+    views_60_90d = (
+        activity_60_90d.groupby("profile_id")
         .size()
-        .rename("profile_views_30_60d")
+        .rename("profile_views_60_90d")
     )
 
-    # --- Leads (last 30d) ---
-    leads_30d = leads[leads["event_date"] >= today - pd.Timedelta(days=30)]
+    # --- Leads (last 60d) ---
+    leads_60d = leads[leads["event_date"] >= today - pd.Timedelta(days=60)]
     lead_counts = (
-        leads_30d.groupby("profile_id")
+        leads_60d.groupby("profile_id")
         .size()
-        .rename("leads_30d")
+        .rename("leads_60d")
     )
 
     # --- Merge ---
     df = df.set_index("profile_id")
-    df = df.join(views_30d, how="left")
-    df = df.join(views_30_60d, how="left")
+    df = df.join(views_60d, how="left")
+    df = df.join(views_60_90d, how="left")
     df = df.join(lead_counts, how="left")
     df = df.fillna(0).reset_index()
 
@@ -70,28 +70,28 @@ def calculate(
     df["contract_views_total"] = df.get("contract_views_total", 0).fillna(0).astype(int)
     df["contract_leads_total"] = df.get("contract_leads_total", 0).fillna(0).astype(int)
 
-    # --- Category benchmarks (avg last 30d) ---
+    # --- Category benchmarks (avg last 60d) ---
     category_avgs = (
         df.groupby("category")
-        .agg({"profile_views_30d": "mean", "leads_30d": "mean"})
+        .agg({"profile_views_60d": "mean", "leads_60d": "mean"})
         .reset_index()
     )
     category_avgs.columns = [
         "category",
-        "category_avg_views_30d",
-        "category_avg_leads_30d",
+        "category_avg_views_60d",
+        "category_avg_leads_60d",
     ]
     df = df.merge(category_avgs, on="category", how="left")
 
     # --- Derived metrics ---
-    df["profile_views_30d"] = df["profile_views_30d"].astype(int)
-    df["profile_views_30_60d"] = df["profile_views_30_60d"].astype(int)
-    df["leads_30d"] = df["leads_30d"].astype(int)
+    df["profile_views_60d"] = df["profile_views_60d"].astype(int)
+    df["profile_views_60_90d"] = df["profile_views_60_90d"].astype(int)
+    df["leads_60d"] = df["leads_60d"].astype(int)
 
-    # Engagement trend: % change vs previous month
+    # Engagement trend: % change vs previous 60d period
     df["engagement_trend"] = (
-        (df["profile_views_30d"] - df["profile_views_30_60d"])
-        / df["profile_views_30_60d"].replace(0, pd.NA)
+        (df["profile_views_60d"] - df["profile_views_60_90d"])
+        / df["profile_views_60_90d"].replace(0, pd.NA)
     ).fillna(0)
 
     # Days until renewal
@@ -134,16 +134,16 @@ def calculate(
         "days_until_renewal",
         "business_status",
         "account_manager",
-        "profile_views_30d",
-        "profile_views_30_60d",
+        "profile_views_60d",
+        "profile_views_60_90d",
         "engagement_trend",
-        "leads_30d",
+        "leads_60d",
         "days_since_last_lead",
         "days_since_last_login",
         "contract_views_total",
         "contract_leads_total",
-        "category_avg_views_30d",
-        "category_avg_leads_30d",
+        "category_avg_views_60d",
+        "category_avg_leads_60d",
         "already_renewed",
         "num_paid_plans_before",
         "stats_date",

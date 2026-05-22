@@ -54,10 +54,10 @@ def send_monthly_results(
     html = template.render(
         name=name,
         month=stats.get("month", ""),
-        profile_views=stats.get("profile_views_30d", 0),
+        profile_views=stats.get("profile_views_60d", 0),
         photo_views=stats.get("photo_views_30d", 0),
         contact_clicks=stats.get("contact_clicks_30d", 0),
-        quote_requests=stats.get("leads_30d", 0),
+        quote_requests=stats.get("leads_60d", 0),
         estimated_value=stats.get("estimated_value", 0),
         benchmark_views=stats.get("benchmark_views_top10pct", 250),
         trend_pct=int(stats.get("engagement_trend", 0) * 100),

@@ -95,15 +95,15 @@ export default async function SupplierPage({
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs font-medium text-gray-500">Profile Views (30d)</p>
+          <p className="text-xs font-medium text-gray-500">Profile Views (60d)</p>
           <p className="mt-1 text-xl font-bold text-gray-900">
-            {supplier.profile_views_30d}
+            {supplier.profile_views_60d}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs font-medium text-gray-500">Leads (30d)</p>
+          <p className="text-xs font-medium text-gray-500">Leads (60d)</p>
           <p className="mt-1 text-xl font-bold text-gray-900">
-            {supplier.leads_30d}
+            {supplier.leads_60d}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -119,15 +119,15 @@ export default async function SupplierPage({
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs font-medium text-gray-500">Category Avg Views (30d)</p>
+          <p className="text-xs font-medium text-gray-500">Category Avg Views (60d)</p>
           <p className="mt-1 text-xl font-bold text-gray-900">
-            {supplier.category_avg_views_30d?.toFixed(0) ?? "—"}
+            {supplier.category_avg_views_60d?.toFixed(0) ?? "—"}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs font-medium text-gray-500">Category Avg Leads (30d)</p>
+          <p className="text-xs font-medium text-gray-500">Category Avg Leads (60d)</p>
           <p className="mt-1 text-xl font-bold text-gray-900">
-            {supplier.category_avg_leads_30d?.toFixed(1) ?? "—"}
+            {supplier.category_avg_leads_60d?.toFixed(1) ?? "—"}
           </p>
         </div>
       </div>

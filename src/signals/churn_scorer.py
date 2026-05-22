@@ -4,7 +4,7 @@ Uses proven features only:
 - days_since_last_login
 - days_since_last_lead
 - engagement_trend
-- profile_views_30d
+- profile_views_60d
 - plan_value
 - tenure_months
 - days_until_renewal
@@ -46,7 +46,7 @@ def _calculate_raw_score(row: pd.Series) -> float:
         score += 0.05
 
     # Very low profile views increases risk
-    if row.get("profile_views_30d", 0) < 5:
+    if row.get("profile_views_60d", 0) < 10:
         score += 0.08
 
     # Renewal approaching increases risk
@@ -98,7 +98,7 @@ def calculate(stats: pd.DataFrame) -> pd.DataFrame:
             factors.append("No login in 30+ days")
         if row.get("days_since_last_lead", 0) > 60:
             factors.append("No leads in 60+ days")
-        if row.get("profile_views_30d", 0) < 10:
+        if row.get("profile_views_60d", 0) < 10:
             factors.append("Very low views")
         if row.get("engagement_trend", 0) < -0.5:
             factors.append("Declining engagement")

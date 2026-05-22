@@ -26,7 +26,7 @@ def get_category_config(category: str) -> dict:
 def calculate(
     df: pd.DataFrame,
     contact_clicks_col: str = "contact_clicks_30d",
-    leads_col: str = "leads_30d",
+    leads_col: str = "leads_60d",
     category_col: str = "category",
 ) -> pd.Series:
     """Calculate estimated booking value for each row in a DataFrame.

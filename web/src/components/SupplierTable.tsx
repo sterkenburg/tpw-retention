@@ -37,10 +37,10 @@ export function SupplierTable({ suppliers }: { suppliers: SupplierStats[] }) {
               Renewal
             </th>
             <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Views (30d)
+              Views (60d)
             </th>
             <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Leads (30d)
+              Leads (60d)
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Risk
@@ -99,10 +99,10 @@ export function SupplierTable({ suppliers }: { suppliers: SupplierStats[] }) {
                 )}
               </td>
               <td className="px-4 py-3 text-sm text-gray-600 text-right whitespace-nowrap">
-                {s.profile_views_30d}
+                {s.profile_views_60d}
               </td>
               <td className="px-4 py-3 text-sm text-gray-600 text-right whitespace-nowrap">
-                {s.leads_30d}
+                {s.leads_60d}
               </td>
               <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
                 {s.risk_factors}

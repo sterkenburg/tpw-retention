@@ -115,8 +115,8 @@ def get_supplier_stats(profile_id: str):
     return {
         "profile_id": profile_id,
         "profile_name": row.get("profile_name"),
-        "profile_views_30d": int(row.get("profile_views_30d", 0)),
-        "leads_30d": int(row.get("leads_30d", 0)),
+        "profile_views_60d": int(row.get("profile_views_60d", 0)),
+        "leads_60d": int(row.get("leads_60d", 0)),
         "estimated_value_30d": round(est_value, 2),
         "profile_completion_pct": round(row.get("profile_completion_pct", 0), 1),
         "engagement_trend": round(row.get("engagement_trend", 0), 2),

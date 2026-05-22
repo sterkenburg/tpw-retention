@@ -61,10 +61,10 @@ export type SupplierStats = {
   business_status: string | null;
   account_manager: string | null;
   profile_completion_pct: number | null;
-  profile_views_30d: number;
-  profile_views_30_60d: number;
+  profile_views_60d: number;
+  profile_views_60_90d: number;
   engagement_trend: number;
-  leads_30d: number;
+  leads_60d: number;
   days_since_last_lead: number;
   days_since_last_login: number;
   estimated_value_30d: number | null;
@@ -72,8 +72,8 @@ export type SupplierStats = {
   benchmark_leads_top10pct: number | null;
   contract_views_total: number;
   contract_leads_total: number;
-  category_avg_views_30d: number | null;
-  category_avg_leads_30d: number | null;
+  category_avg_views_60d: number | null;
+  category_avg_leads_60d: number | null;
   already_renewed: boolean | null;
   churn_probability: number;
   priority_tier: string;
