@@ -42,18 +42,6 @@ export function SupplierTable({ suppliers }: { suppliers: SupplierStats[] }) {
             <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Leads (30d)
             </th>
-            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Views (contract)
-            </th>
-            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Leads (contract)
-            </th>
-            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Avg Cat. Views
-            </th>
-            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Avg Cat. Leads
-            </th>
             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Risk
             </th>
@@ -115,18 +103,6 @@ export function SupplierTable({ suppliers }: { suppliers: SupplierStats[] }) {
               </td>
               <td className="px-4 py-3 text-sm text-gray-600 text-right whitespace-nowrap">
                 {s.leads_30d}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-600 text-right whitespace-nowrap">
-                {s.contract_views_total}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-600 text-right whitespace-nowrap">
-                {s.contract_leads_total}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-500 text-right whitespace-nowrap">
-                {s.category_avg_views_30d?.toFixed(0) ?? "—"}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-500 text-right whitespace-nowrap">
-                {s.category_avg_leads_30d?.toFixed(1) ?? "—"}
               </td>
               <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
                 {s.risk_factors}
