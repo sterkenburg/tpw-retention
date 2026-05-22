@@ -101,6 +101,30 @@ export default async function SupplierPage({
             {supplier.leads_30d}
           </p>
         </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs font-medium text-gray-500">Profile Views (contract)</p>
+          <p className="mt-1 text-xl font-bold text-gray-900">
+            {supplier.contract_views_total}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs font-medium text-gray-500">Leads (contract)</p>
+          <p className="mt-1 text-xl font-bold text-gray-900">
+            {supplier.contract_leads_total}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs font-medium text-gray-500">Category Avg Views (30d)</p>
+          <p className="mt-1 text-xl font-bold text-gray-900">
+            {supplier.category_avg_views_30d?.toFixed(0) ?? "—"}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs font-medium text-gray-500">Category Avg Leads (30d)</p>
+          <p className="mt-1 text-xl font-bold text-gray-900">
+            {supplier.category_avg_leads_30d?.toFixed(1) ?? "—"}
+          </p>
+        </div>
       </div>
 
       {/* Risk + Signals */}

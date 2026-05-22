@@ -37,15 +37,23 @@ def run():
     df_suppliers = suppliers.get_current()
     df_activity = activity.get_last_90d()
     df_leads = leads.get_last_90d()
+    df_contract_activity = activity.get_contract_period_views(df_suppliers)
+    df_contract_leads = leads.get_contract_period_leads(df_suppliers)
     print(f"        Suppliers: {len(df_suppliers)}")
     print(f"        Activity events: {len(df_activity)}")
     print(f"        Leads: {len(df_leads)}")
+    print(f"        Contract views: {len(df_contract_activity)}")
+    print(f"        Contract leads: {len(df_contract_leads)}")
 
     # ------------------------------------------------------------------
     # 2. Calculate supplier stats
     # ------------------------------------------------------------------
     print("[2/6] Calculating supplier stats...")
-    stats = supplier_stats.calculate(df_suppliers, df_activity, df_leads)
+    stats = supplier_stats.calculate(
+        df_suppliers, df_activity, df_leads,
+        contract_activity=df_contract_activity,
+        contract_leads=df_contract_leads,
+    )
     stats = projected_value.add_benchmarks(stats)
     stats["estimated_value_30d"] = projected_value.calculate(stats)
     print(f"        Stats rows: {len(stats)}")
@@ -109,6 +117,8 @@ def run():
         "profile_completion_pct", "profile_views_30d", "profile_views_30_60d",
         "engagement_trend", "leads_30d", "days_since_last_lead",
         "days_since_last_login", "estimated_value_30d",
+        "contract_views_total", "contract_leads_total",
+        "category_avg_views_30d", "category_avg_leads_30d",
         "benchmark_views_top10pct", "benchmark_leads_top10pct",
         "churn_probability", "priority_tier", "risk_factors",
         "recommended_action", "stats_date",

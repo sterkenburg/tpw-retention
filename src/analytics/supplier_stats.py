@@ -5,7 +5,13 @@ from datetime import datetime
 import pandas as pd
 
 
-def calculate(suppliers: pd.DataFrame, activity: pd.DataFrame, leads: pd.DataFrame) -> pd.DataFrame:
+def calculate(
+    suppliers: pd.DataFrame,
+    activity: pd.DataFrame,
+    leads: pd.DataFrame,
+    contract_activity: pd.DataFrame | None = None,
+    contract_leads: pd.DataFrame | None = None,
+) -> pd.DataFrame:
     """Build supplier_stats_daily from raw data.
 
     Returns one row per active supplier with all metrics needed by
@@ -47,6 +53,35 @@ def calculate(suppliers: pd.DataFrame, activity: pd.DataFrame, leads: pd.DataFra
     df = df.join(views_30_60d, how="left")
     df = df.join(lead_counts, how="left")
     df = df.fillna(0).reset_index()
+
+    # --- Contract-period totals ---
+    if contract_activity is not None and not contract_activity.empty:
+        contract_activity = contract_activity.set_index("profile_id")["contract_views_total"]
+        df = df.set_index("profile_id").join(contract_activity, how="left").reset_index()
+    else:
+        df["contract_views_total"] = 0
+
+    if contract_leads is not None and not contract_leads.empty:
+        contract_leads = contract_leads.set_index("profile_id")["contract_leads_total"]
+        df = df.set_index("profile_id").join(contract_leads, how="left").reset_index()
+    else:
+        df["contract_leads_total"] = 0
+
+    df["contract_views_total"] = df.get("contract_views_total", 0).fillna(0).astype(int)
+    df["contract_leads_total"] = df.get("contract_leads_total", 0).fillna(0).astype(int)
+
+    # --- Category benchmarks (avg last 30d) ---
+    category_avgs = (
+        df.groupby("category")
+        .agg({"profile_views_30d": "mean", "leads_30d": "mean"})
+        .reset_index()
+    )
+    category_avgs.columns = [
+        "category",
+        "category_avg_views_30d",
+        "category_avg_leads_30d",
+    ]
+    df = df.merge(category_avgs, on="category", how="left")
 
     # --- Derived metrics ---
     df["profile_views_30d"] = df["profile_views_30d"].astype(int)
@@ -105,6 +140,10 @@ def calculate(suppliers: pd.DataFrame, activity: pd.DataFrame, leads: pd.DataFra
         "leads_30d",
         "days_since_last_lead",
         "days_since_last_login",
+        "contract_views_total",
+        "contract_leads_total",
+        "category_avg_views_30d",
+        "category_avg_leads_30d",
         "num_paid_plans_before",
         "stats_date",
     ]

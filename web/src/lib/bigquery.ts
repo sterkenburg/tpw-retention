@@ -70,6 +70,10 @@ export type SupplierStats = {
   estimated_value_30d: number | null;
   benchmark_views_top10pct: number | null;
   benchmark_leads_top10pct: number | null;
+  contract_views_total: number;
+  contract_leads_total: number;
+  category_avg_views_30d: number | null;
+  category_avg_leads_30d: number | null;
   churn_probability: number;
   priority_tier: string;
   risk_factors: string;

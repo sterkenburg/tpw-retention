@@ -54,6 +54,51 @@ def get_last_90d() -> pd.DataFrame:
     return df
 
 
+def get_contract_period_leads(suppliers_df: pd.DataFrame) -> pd.DataFrame:
+    """Get total leads since each supplier's plan_start."""
+    if suppliers_df.empty:
+        return pd.DataFrame(columns=["profile_id", "contract_leads_total"])
+
+    values = []
+    for _, row in suppliers_df.iterrows():
+        pid = int(row["profile_id"])
+        plan_start = row["plan_start"].strftime("%Y-%m-%d") if pd.notna(row["plan_start"]) else "1900-01-01"
+        values.append(f"STRUCT({pid} AS profile_id, DATE('{plan_start}') AS plan_start)")
+
+    if not values:
+        return pd.DataFrame(columns=["profile_id", "contract_leads_total"])
+
+    values_str = ",\n        ".join(values)
+
+    sql = f"""
+    WITH supplier_periods AS (
+        SELECT * FROM UNNEST([
+            {values_str}
+        ])
+    ),
+    all_leads AS (
+        SELECT company_id AS profile_id, event_date
+        FROM `{_LEADS_TABLE}`
+        WHERE company_id IS NOT NULL
+
+        UNION ALL
+
+        SELECT profile_id, event_date
+        FROM `{_PHONE_TABLE}`
+        WHERE profile_id IS NOT NULL
+    )
+    SELECT
+        CAST(l.profile_id AS STRING) AS profile_id,
+        COUNT(*) AS contract_leads_total
+    FROM all_leads l
+    INNER JOIN supplier_periods s
+        ON l.profile_id = s.profile_id
+    WHERE l.event_date >= s.plan_start
+    GROUP BY profile_id
+    """
+    return query(sql)
+
+
 def get_by_supplier(profile_id: str, days: int = 30) -> pd.DataFrame:
     """Get lead events for a specific supplier in the last N days."""
     sql = f"""

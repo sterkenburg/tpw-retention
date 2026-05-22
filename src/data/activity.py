@@ -40,6 +40,40 @@ def get_last_90d() -> pd.DataFrame:
     return df
 
 
+def get_contract_period_views(suppliers_df: pd.DataFrame) -> pd.DataFrame:
+    """Get total profile views since each supplier's plan_start."""
+    if suppliers_df.empty:
+        return pd.DataFrame(columns=["profile_id", "contract_views_total"])
+
+    values = []
+    for _, row in suppliers_df.iterrows():
+        pid = int(row["profile_id"])
+        plan_start = row["plan_start"].strftime("%Y-%m-%d") if pd.notna(row["plan_start"]) else "1900-01-01"
+        values.append(f"STRUCT({pid} AS profile_id, DATE('{plan_start}') AS plan_start)")
+
+    if not values:
+        return pd.DataFrame(columns=["profile_id", "contract_views_total"])
+
+    values_str = ",\n        ".join(values)
+
+    sql = f"""
+    WITH supplier_periods AS (
+        SELECT * FROM UNNEST([
+            {values_str}
+        ])
+    )
+    SELECT
+        CAST(a.profile_id AS STRING) AS profile_id,
+        COUNT(*) AS contract_views_total
+    FROM `{_PROCESSED_TABLE}` a
+    INNER JOIN supplier_periods s
+        ON a.profile_id = s.profile_id
+    WHERE a.event_date >= s.plan_start
+    GROUP BY profile_id
+    """
+    return query(sql)
+
+
 def get_profile_views(profile_ids: list[str], days: int = 30) -> pd.DataFrame:
     """Get profile view counts per supplier for the last N days."""
     id_list = ",".join(f"{int(pid)}" for pid in profile_ids)
