@@ -1,0 +1,51 @@
+steps:
+  # Build container image
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "-t"
+      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-retention/app:$COMMIT_SHA"
+      - "."
+
+  # Push to Artifact Registry
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-retention/app:$COMMIT_SHA"
+
+  # Deploy API service
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      - "run"
+      - "deploy"
+      - "tpw-retention-api"
+      - "--image"
+      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-retention/app:$COMMIT_SHA"
+      - "--region"
+      - "europe-west4"
+      - "--platform"
+      - "managed"
+      - "--allow-unauthenticated"
+      - "--set-env-vars"
+      - "APP_MODE=api"
+
+  # Deploy Dashboard service
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      - "run"
+      - "deploy"
+      - "tpw-retention-dashboard"
+      - "--image"
+      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-retention/app:$COMMIT_SHA"
+      - "--region"
+      - "europe-west4"
+      - "--platform"
+      - "managed"
+      - "--allow-unauthenticated"
+      - "--set-env-vars"
+      - "APP_MODE=dashboard"
+
+images:
+  - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-retention/app:$COMMIT_SHA"

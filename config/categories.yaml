@@ -1,0 +1,114 @@
+# Wedding supplier categories — benchmarks for projected value
+# Update quarterly with actual TPW data
+
+categories:
+  venue:
+    avg_booking_value: 8000
+    inquiry_to_booking_rate: 0.15
+    avg_views_top10pct: 300
+    avg_leads_top10pct: 15
+  
+  catering:
+    avg_booking_value: 6500
+    inquiry_to_booking_rate: 0.20
+    avg_views_top10pct: 250
+    avg_leads_top10pct: 12
+  
+  photographer:
+    avg_booking_value: 2500
+    inquiry_to_booking_rate: 0.35
+    avg_views_top10pct: 400
+    avg_leads_top10pct: 20
+  
+  videographer:
+    avg_booking_value: 2000
+    inquiry_to_booking_rate: 0.30
+    avg_views_top10pct: 350
+    avg_leads_top10pct: 15
+  
+  florist:
+    avg_booking_value: 1200
+    inquiry_to_booking_rate: 0.40
+    avg_views_top10pct: 300
+    avg_leads_top10pct: 18
+  
+  dj:
+    name: "DJ / Music"
+    avg_booking_value: 1000
+    inquiry_to_booking_rate: 0.45
+    avg_views_top10pct: 280
+    avg_leads_top10pct: 16
+  
+  wedding_cake:
+    name: "Wedding Cake"
+    avg_booking_value: 600
+    inquiry_to_booking_rate: 0.50
+    avg_views_top10pct: 250
+    avg_leads_top10pct: 14
+  
+  wedding_dress:
+    name: "Wedding Dress"
+    avg_booking_value: 2000
+    inquiry_to_booking_rate: 0.25
+    avg_views_top10pct: 350
+    avg_leads_top10pct: 12
+  
+  suits:
+    name: "Suits"
+    avg_booking_value: 800
+    inquiry_to_booking_rate: 0.35
+    avg_views_top10pct: 200
+    avg_leads_top10pct: 10
+  
+  wedding_planner:
+    name: "Wedding Planner"
+    avg_booking_value: 3500
+    inquiry_to_booking_rate: 0.20
+    avg_views_top10pct: 280
+    avg_leads_top10pct: 12
+  
+  hair_makeup:
+    name: "Hair & Makeup"
+    avg_booking_value: 500
+    inquiry_to_booking_rate: 0.40
+    avg_views_top10pct: 320
+    avg_leads_top10pct: 18
+  
+  rings:
+    name: "Rings / Jewelry"
+    avg_booking_value: 3000
+    inquiry_to_booking_rate: 0.30
+    avg_views_top10pct: 220
+    avg_leads_top10pct: 10
+  
+  decor:
+    name: "Decor / Styling"
+    avg_booking_value: 2000
+    inquiry_to_booking_rate: 0.30
+    avg_views_top10pct: 280
+    avg_leads_top10pct: 14
+  
+  transport:
+    avg_booking_value: 800
+    inquiry_to_booking_rate: 0.35
+    avg_views_top10pct: 180
+    avg_leads_top10pct: 8
+  
+  stationery:
+    avg_booking_value: 400
+    inquiry_to_booking_rate: 0.45
+    avg_views_top10pct: 200
+    avg_leads_top10pct: 10
+  
+  honeymoon:
+    avg_booking_value: 5000
+    inquiry_to_booking_rate: 0.15
+    avg_views_top10pct: 150
+    avg_leads_top10pct: 6
+
+# Default for unknown categories
+default:
+  avg_booking_value: 1500
+  inquiry_to_booking_rate: 0.30
+  avg_views_top10pct: 250
+  avg_leads_top10pct: 12

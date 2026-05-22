@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+        .header { background: #f59e0b; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .tips { background: #f8fafc; padding: 15px; border-radius: 8px; margin: 15px 0; }
+        .tips li { margin: 8px 0; }
+        .cta { text-align: center; margin: 25px 0; }
+        .cta a { background: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; }
+        .footer { text-align: center; color: #94a3b8; font-size: 12px; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>We missen je op ThePerfectWedding</h2>
+    </div>
+
+    <div class="content">
+        <p>Hi {{ name }},</p>
+        <p>We zien dat je al <strong>{{ days_since_lead }} dagen</strong> geen aanvraag hebt ontvangen. Dat kan beter!</p>
+
+        <div class="tips">
+            <p><strong>3 snelle tips om meer aanvragen te krijgen:</strong></p>
+            <ol>
+                <li><strong>Vul je profiel 100% in</strong> — leveranciers met een compleet profiel krijgen 3x meer weergaven</li>
+                <li><strong>Upload 10+ foto's</strong> — bruidsparen kijken gemiddeld 15 foto's voordat ze contact opnemen</li>
+                <li><strong>Reageer snel</strong> — binnen 2 uur reageren = 3x meer boekingen</li>
+            </ol>
+        </div>
+
+        <p>Realiteit check: leveranciers in <strong>{{ category }}</strong> krijgen gemiddeld 8-12 aanvragen per maand. Met een compleet profiel haal je dat gemakkelijk.</p>
+
+        <div class="cta">
+            <a href="https://admin.theperfectwedding.nl">Profiel optimaliseren →</a>
+        </div>
+
+        <p>Wil je dat wij gratis met je meekijken? <a href="mailto:leveranciers@theperfectwedding.nl">Stuur ons een bericht</a>.</p>
+    </div>
+
+    <div class="footer">
+        <p>Team ThePerfectWedding</p>
+    </div>
+</body>
+</html>

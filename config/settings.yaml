@@ -1,0 +1,72 @@
+# TPW Retention Platform — Configuration
+# Extracted from existing churn_prediction project
+# Override with environment variables: TPW__SECTION__KEY=value
+
+bigquery:
+  project_id: "tpw-ga4-bigquery"
+  dataset: "retention"              # new dataset for this platform
+  location: "EU"
+
+# Source tables (from existing project)
+sources:
+  # Business data — supplier profiles, plans, AM assignments
+  business_table: "tpw-ga4-bigquery.churn_prediction.business_development"
+  
+  # GA4 processed pageview events (Dataform output)
+  pageviews_table: "tpw-ga4-bigquery.ga4_dataform_output.bedrijven_pageview_events"
+  
+  # Lead events — when couples submit contact forms
+  leads_table: "tpw-ga4-bigquery.ga4_dataform_output.generate_lead"
+  
+  # Phone reveals — when couples click "show phone"
+  phone_reveals_table: "tpw-ga4-bigquery.ga4_dataform_output.show_phone"
+  
+  # Matches / inquiries
+  matches_table: "tpw-ga4-bigquery.ga4_dataform_output.bedrijven_matches"
+  
+  # Lead conversion tracking (won/lost/accepted)
+  conversions_table: "tpw-ga4-bigquery.ga4_dataform_customer_journey.cj_lead_scoring"
+  
+  # Raw GA4 events (fallback if processed tables missing)
+  raw_ga4_dataset: "tpw-ga4-bigquery.analytics_251061328"
+  raw_ga4_events: "events_*"
+
+# Retention tables (read/write — created by this platform)
+tables:
+  supplier_stats: "supplier_stats_daily"
+  signals: "signals_daily"
+  actions_log: "actions_log"
+  outcomes: "outcomes"
+  email_log: "email_log"
+  intervention_log: "intervention_log"
+
+# Thresholds
+# Note: old system used 0.304 (dashboard), 0.60 (production), 0.78 (hybrid)
+# We use a single conservative threshold to reduce false positives
+thresholds:
+  churn_p1: 0.80               # urgent: CRM task  (~9% of suppliers)
+  churn_p2: 0.55               # high: email + monitor  (~20% of suppliers)
+  churn_p3: 0.35               # medium: nurture  (~21% of suppliers)
+  no_lead_days: 45             # trigger re-engagement
+  renewal_days: 60             # trigger renewal prep
+  engagement_decline: -0.5     # 50% drop vs previous month
+
+# API keys (use env vars in production)
+# sendgrid_api_key: "${SENDGRID_API_KEY}"
+# slack_webhook_url: "${SLACK_WEBHOOK_URL}"
+# messagebird_api_key: "${MESSAGEBIRD_API_KEY}"
+# crm_api_key: "${CRM_API_KEY}"
+
+# Email settings
+email:
+  from_name: "ThePerfectWedding"
+  from_address: "leveranciers@theperfectwedding.nl"
+  monthly_send_day: 1          # 1st of month
+  monthly_send_hour: 9
+
+# Notifications
+notifications:
+  sms_enabled: true
+  email_enabled: true
+  quiet_hours_start: "22:00"
+  quiet_hours_end: "08:00"
