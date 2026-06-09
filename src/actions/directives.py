@@ -133,7 +133,6 @@ def build(experiment_id: str = "stage1_exposure") -> pd.DataFrame:
         client.execute(
             f"DELETE FROM `{client.PROJECT_ID}.{client.DATASET}.{_TABLE}` "
             f"WHERE experiment_id = '{experiment_id}'",
-            location="US",
         )
     if not df.empty:
         client.write(df, _TABLE, if_exists="append")
