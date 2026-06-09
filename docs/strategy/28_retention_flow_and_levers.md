@@ -1,7 +1,7 @@
-# 28 — Retention Flow & Lever Catalog
+# 28 — Lifecycle Flow & Lever Catalog
 
 **Date:** 2026-06-09
-**Status:** Design — the end-to-end retention flow and the full lever set
+**Status:** Design — the end-to-end supplier-lifecycle flow and the full lever set
 **Builds on:** [17 strategy](17_refined_retention_strategy.md), [18 bundle+pilot](18_value_add_bundle_and_pilot.md), [19 architecture](19_system_architecture.md), [20 phased plan](20_phased_implementation_plan.md). Spike answers: [23](23_spike2_exposure_rollup_answer.md)–[27](27_spike6_invoice_profile_join_answer.md).
 
 This pulls the whole decisioning flow into one picture and catalogs **every lever** —

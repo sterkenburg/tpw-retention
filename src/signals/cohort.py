@@ -1,7 +1,7 @@
 """WS-C — holdout / cohort assignment (the experiment integrity backbone).
 
 `cohort_assignment` is the **single source of truth** for who is in which arm of
-the retention pilot. Every emitter (Elastic boost, newsletter, scraper trigger,
+the lifecycle pilot. Every emitter (Elastic boost, newsletter, scraper trigger,
 Bird email) must read it and **filter out control before acting** — otherwise the
 pilot is unmeasurable (see docs/strategy/19 §"Holdout enforcement").
 

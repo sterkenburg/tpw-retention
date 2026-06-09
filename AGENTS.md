@@ -1,10 +1,10 @@
-# TPW Retention Platform — Agent Guide
+# TPW Lifecycle Platform — Agent Guide
 
 This document is for AI coding agents. It assumes you know nothing about this project.
 
 ## Project Overview
 
-The **TPW Retention Platform** is the single system that handles all supplier retention for **The Perfect Wedding** (a Dutch wedding marketplace). It replaces a legacy `churn_prediction` system that had grown to 200+ scripts, cascading models, and analysis paralysis.
+The **TPW Lifecycle Platform** is the single system that manages the full supplier lifecycle for **The Perfect Wedding** (a Dutch wedding marketplace) — moving suppliers through onboarding → healthy → at_risk → renewal_window → lapsed. Retention is one phase/outcome within that lifecycle, not the whole system. It replaces a legacy `churn_prediction` system that had grown to 200+ scripts, cascading models, and analysis paralysis. (The BigQuery dataset and several Cloud Run services are still named `retention*` pending a rename migration.)
 
 **Core philosophy:** churn risk is one signal among many, not the centerpiece. The platform is action-oriented — every signal triggers a concrete action (CRM task, email, Slack alert) rather than just producing a report.
 
@@ -40,7 +40,7 @@ The **TPW Retention Platform** is the single system that handles all supplier re
 ## Project Structure
 
 ```
-tpw-retention/
+tpw-lifecycle/
 ├── config/
 │   ├── settings.yaml          # Thresholds, table names, API config, BigQuery project
 │   └── categories.yaml        # Wedding supplier category benchmarks (16 categories)
@@ -162,13 +162,13 @@ npm run lint
 
 ```bash
 # Build
-docker build -t tpw-retention .
+docker build -t tpw-lifecycle .
 
 # Run API
-docker run -p 8080:8080 -e APP_MODE=api tpw-retention
+docker run -p 8080:8080 -e APP_MODE=api tpw-lifecycle
 
 # Run Dashboard
-docker run -p 8080:8080 -e APP_MODE=dashboard tpw-retention
+docker run -p 8080:8080 -e APP_MODE=dashboard tpw-lifecycle
 ```
 
 ### Deploy to GCP
@@ -282,8 +282,8 @@ Daily Pipeline (7 AM Cloud Scheduler → POST /jobs/daily)
 
 | Service | Mode | Entry Point |
 |---------|------|-------------|
-| `tpw-retention-api` | `APP_MODE=api` | Uvicorn serving FastAPI |
-| `tpw-retention-dashboard` | `APP_MODE=dashboard` | Streamlit |
+| `tpw-lifecycle-api` | `APP_MODE=api` | Uvicorn serving FastAPI |
+| `tpw-lifecycle-dashboard` | `APP_MODE=dashboard` | Streamlit |
 
 ### Cloud Scheduler
 

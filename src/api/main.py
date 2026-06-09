@@ -18,7 +18,7 @@ from actions import notifications
 from analytics import projected_value
 from data import activity, client, leads, suppliers
 
-app = FastAPI(title="TPW Retention API")
+app = FastAPI(title="TPW Lifecycle API")
 
 
 # ------------------------------------------------------------------
@@ -26,7 +26,7 @@ app = FastAPI(title="TPW Retention API")
 # ------------------------------------------------------------------
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "tpw-retention"}
+    return {"status": "ok", "service": "tpw-lifecycle"}
 
 
 # ------------------------------------------------------------------

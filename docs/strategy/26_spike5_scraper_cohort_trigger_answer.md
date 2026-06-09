@@ -1,7 +1,7 @@
 # 26 — Spike 5 Answer: Scraper Cohort Trigger (YOO-232)
 
 **Status:** Spike answer (closes Definition of Done) · **Date:** 2026-06-09 · **Linear:** [YOO-232](https://linear.app/yoonsterkenburg/issue/YOO-232) (parent YOO-227)
-**Owner:** Retention (tpw-retention) · profile_auto_complete
+**Owner:** Lifecycle (tpw-lifecycle) · profile_auto_complete
 
 Source spec: `docs/strategy/21_phase0_confirmation_spikes.md` §Spike 5. Bundle context: docs/strategy/17 §"pair with profile optimization", doc 18.
 **Definition of done:** trigger interface + throughput + opt-in model.
@@ -25,7 +25,7 @@ Source spec: `docs/strategy/21_phase0_confirmation_spikes.md` §Spike 5. Bundle 
 
 ## 1. Trigger interface
 
-**Retention side (built):** the `optimize` lever in `src/actions/directives.py`:
+**Lifecycle side (built):** the `optimize` lever in `src/actions/directives.py`:
 
 ```
 retention_directives row:
@@ -44,7 +44,7 @@ list.
 - Is it an **HTTP endpoint** that accepts a list of `profile_id`s, a **`run_all.sh`
   batch** over a supplied id file, or a **queue** producer?
 - **Recommended contract:** a list-accepting trigger (`POST /optimize {profile_ids:[…]}`
-  or a batch reading a BQ/file id list) so retention can hand it the cohort directly.
+  or a batch reading a BQ/file id list) so the lifecycle platform can hand it the cohort directly.
 - Idempotency: re-running for an already-optimized profile should be a no-op or a
   refresh, not a duplicate publish.
 
@@ -90,11 +90,11 @@ auto-suggests company text + properties → one-click go-live**. Two consequence
 
 | DoD item | Status |
 |---|---|
-| Trigger interface | ✅ Retention contract defined (`type='optimize'` directive); scraper-side invocation is the owner's open item (§1) |
+| Trigger interface | ✅ Lifecycle contract defined (`type='optimize'` directive); scraper-side invocation is the owner's open item (§1) |
 | Throughput | ✅ Assessed — ~80–300 is small/batch-capable; confirm rate with owner (§3) |
 | Opt-in model | ✅ Characterised — suggest-then-approve; **product decision (a) enrollment-consent vs (b) in-dashboard approval** flagged (§2) |
 
-**Spike 5 is answered** from the retention side. Residual items (externally-owned /
+**Spike 5 is answered** from the lifecycle side. Residual items (externally-owned /
 product decisions, gate dispatch not the contract):
 
 1. **profile_auto_complete owner:** the actual invocation surface (HTTP/batch/queue)

@@ -1,7 +1,7 @@
 # 27 — Spike 6 Answer: Invoice → `profile_id` Join (YOO-233)
 
 **Status:** Spike answer (closes Definition of Done) · **Date:** 2026-06-09 · **Linear:** [YOO-233](https://linear.app/yoonsterkenburg/issue/YOO-233) (parent YOO-227)
-**Owner:** Retention (tpw-retention) · invoice_service
+**Owner:** Lifecycle (tpw-lifecycle) · invoice_service
 
 Source spec: `docs/strategy/21_phase0_confirmation_spikes.md` §Spike 6. Revenue-source decision: doc 19 §7.
 **Definition of done:** documented join key + coverage + a per-supplier revenue view. *(Stage-1 proceeds on `business_development.plan_value` interim.)*
@@ -68,7 +68,7 @@ Measured live (companies_profiles is native EU; counts exact):
 | **Active paid suppliers** (`plan_end ≥ now AND plan_value > 0`) | **1,545** | **1,524 (98.6%)** |
 | (all active paid had a `companies_profiles` row) | 1,545 | 100% |
 
-**The 98.6% on the active-paid cohort is the number that matters** — the retention
+**The 98.6% on the active-paid cohort is the number that matters** — the lifecycle
 pilot universe is essentially fully covered by the Moneybird bridge. The low 8%
 overall is just the 50k free profiles that were never customers.
 

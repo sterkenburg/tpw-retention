@@ -1,8 +1,8 @@
-# TPW Retention Platform — Architecture
+# TPW Lifecycle Platform — Architecture
 
 ## What This Is
 
-A single platform that handles **all** supplier retention for The Perfect Wedding:
+A single platform that manages the **full** supplier lifecycle for The Perfect Wedding — onboarding → healthy → at_risk → renewal_window → lapsed — with retention as one key phase/outcome:
 - Supplier value dashboard (views, leads, projected value)
 - Instant lead notifications (email/SMS)
 - Automated email flows (monthly results, re-engagement, renewal)
@@ -79,7 +79,7 @@ A single platform that handles **all** supplier retention for The Perfect Weddin
 ## Project Structure
 
 ```
-tpw-retention/
+tpw-lifecycle/
 ├── README.md                          # What this is, how to deploy
 ├── ARCHITECTURE.md                    # This file
 ├── pyproject.toml                     # Python deps

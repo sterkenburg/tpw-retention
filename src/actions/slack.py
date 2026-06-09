@@ -25,7 +25,7 @@ def send_summary(
             "type": "header",
             "text": {
                 "type": "plain_text",
-                "text": f"🚨 Retention Daily — {datetime.now().strftime('%d %b %Y')}",
+                "text": f"🚨 Lifecycle Daily — {datetime.now().strftime('%d %b %Y')}",
             },
         },
         {

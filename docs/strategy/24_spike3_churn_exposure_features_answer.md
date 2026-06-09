@@ -1,7 +1,7 @@
 # 24 — Spike 3 Answer: Exposure Features in the Churn Model (YOO-230)
 
 **Status:** Spike answer (closes Definition of Done) · **Date:** 2026-06-09 · **Linear:** [YOO-230](https://linear.app/yoonsterkenburg/issue/YOO-230) (parent YOO-227)
-**Owner:** Retention (tpw-retention) · churn_prediction
+**Owner:** Lifecycle (tpw-lifecycle) · churn_prediction
 
 Source spec: `docs/strategy/21_phase0_confirmation_spikes.md` §Spike 3. Prior audit: `docs/strategy/12_churn_prediction_audit.md`.
 **Definition of done:** feasibility + plan + expected recall-lift estimate (or fallback decision).
@@ -34,7 +34,7 @@ From the prior audit (doc 12) + `config`/`suppliers.py` references:
   **7 AM** → BigQuery (`daily_churn_predictions_segmented`) → Cloud Run dashboard +
   Slack. Source data in the `churn_prediction` BQ dataset (`business_development`,
   `profiles`).
-- **The pipeline is external** to tpw-retention — this repo holds a *simplified*
+- **The pipeline is external** to tpw-lifecycle — this repo holds a *simplified*
   rule-based scorer (`src/signals/churn_scorer.py`) and the exposure-driven targeting
   signal (`src/signals/targeting.py`), **not** the cascading model's training code.
 - **Performance gap:** validation precision/recall (78.8% / 82.4%) collapse in

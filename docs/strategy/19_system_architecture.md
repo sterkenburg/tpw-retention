@@ -10,11 +10,11 @@ How the value-add bundle + pilot live in TPW's existing systems.
 
 ## Core principle: a decisioning engine that integrates, not a new monolith
 
-The retention platform (this repo) is the **supplier-retention brain**: it ingests data, computes the targeting signal, assigns the holdout, and **emits directives** to surfaces it does not own. Crucially, **delivery and serving already exist** in adjacent services — we integrate with them rather than rebuild.
+The lifecycle platform (this repo) is the **supplier-lifecycle brain**: it ingests data, computes the targeting signal, assigns the holdout, and **emits directives** to surfaces it does not own. Retention is one lifecycle outcome it drives, alongside onboarding and win-back. Crucially, **delivery and serving already exist** in adjacent services — we integrate with them rather than rebuild.
 
 ```
                          ┌─────────────────────────────────────┐
-   DATA (BigQuery)       │   RETENTION DECISIONING ENGINE       │
+   DATA (BigQuery)       │   LIFECYCLE DECISIONING ENGINE       │
    monthly_profile_stats │   (this repo, extended)              │
    view_item / _list ───▶│   1 exposure aggregation             │
    searchconsole         │   2 targeting signal (exposure/      │
@@ -41,15 +41,15 @@ The retention platform (this repo) is the **supplier-retention brain**: it inges
 
 ## Full TPW ecosystem (system map)
 
-The retention brain is thin — it orchestrates these existing services:
+The lifecycle brain is thin — it orchestrates these existing services:
 
-| Repo / system | Role | Retention integration |
+| Repo / system | Role | Lifecycle integration |
 |---|---|---|
-| **tpw-retention** (this) | Retention decisioning brain | targeting + holdout + directives + measurement |
+| **tpw-lifecycle** (this) | Lifecycle decisioning brain | targeting + holdout + directives + measurement |
 | **churn_prediction** | Live churn model (Streamlit + segmented XGBoost; ~100% precision but **27.6% recall** @0.65) | **Extend with exposure features** (the missing driver → should lift recall); owns `business_development` |
 | **analytics_reporting** | GA4 reporting producer (`monthly_profile_stats`, dimensional data, supplier reports) | **Source/producer of exposure data — reuse/extend, don't rebuild** |
 | **profile_auto_complete** | Scraper / profile auto-complete + onboarding | Trigger for profile optimization (bundle step 2) + onboarding lever |
-| **customer_journey** | **B2C venue flow** | **Out of scope — kept separate from retention** |
+| **customer_journey** | **B2C venue flow** | **Out of scope — kept separate from the lifecycle system** |
 | **marketing_flow** | Bird.com newsletter / marketing engine | **Supplier email + couple-newsletter delivery** |
 | **gads_api** | Venue Google Ads automation (the tripled budget) | Venue track (separate); source of venue exposure inflation |
 | **invoice_service** | Moneybird → `moneybird.mb-2015-2020` + `moneybird.mb-contacts` (Drive-backed external) | **Revenue source of truth** — ARR / churn-value / right-pricing (join + 98.6% coverage: doc 27) |
@@ -78,7 +78,7 @@ The retention brain is thin — it orchestrates these existing services:
 3. **Cross-region** (churn_prediction = eu-west3, GA4/SC = EU): aggregate each side to small per-supplier tables, then join (no single cross-region query).
 4. **Redistribution = an Elastic boost field**, applied only in the free/organic layer; **premium spots untouched** (paid product preserved). Exact `function_score` shape to confirm with the Elastic owner.
 5. **Holdout integrity is central and enforced everywhere** (see below).
-6. **Targeting = extend the live `churn_prediction` model, not a parallel scorer.** It already segments new-vs-legacy (matches our tenure finding) and runs at ~100% precision but only **27.6% recall** — it misses 72% of churners precisely because it's lead/activity/business/call-centric and **lacks exposure features**. Adding exposure level+trend (+ dashboard-engagement) features there is the highest-value model change. The retention platform consumes its scores to target the bundle. (A simple rule-based override remains a fallback.)
+6. **Targeting = extend the live `churn_prediction` model, not a parallel scorer.** It already segments new-vs-legacy (matches our tenure finding) and runs at ~100% precision but only **27.6% recall** — it misses 72% of churners precisely because it's lead/activity/business/call-centric and **lacks exposure features**. Adding exposure level+trend (+ dashboard-engagement) features there is the highest-value model change. The lifecycle platform consumes its scores to target the bundle. (A simple rule-based override remains a fallback.)
 
 7. **Revenue source of truth = `invoice_service` (`moneybird.mb-2015-2020` + `moneybird.mb-contacts`, Drive-backed external)** — use it for ARR, churn-value, and right-pricing inputs, not `business_development.plan_value`. Join key + coverage in doc 27 (Spike 6). *(Interim: `plan_value` until Drive scope lands; `finance_dashboard.matched_invoices` does not exist — corrected per doc 27.)*
 7. **Dashboard gets a new sibling reporting table**, not edits to `monthly_profile_stats` (which the live dashboard depends on).
@@ -130,7 +130,7 @@ The retention brain is thin — it orchestrates these existing services:
 
 ## To confirm with service owners
 - Elastic: how to add/apply a `retention_boost` field within the existing (premium-aware) ranking.
-- `analytics_reporting`: where the exposure rollup should live (inside it vs a thin retention job over its tables).
+- `analytics_reporting`: where the exposure rollup should live (inside it vs a thin lifecycle job over its tables).
 - `churn_prediction`: ownership/path to add exposure features to the live model.
 - `marketing_flow`: the supplier email-directive + "featured suppliers" injection (both via Bird). *(customer_journey = B2C venue flow, intentionally not used.)*
 - `profile_auto_complete`: trigger interface for a cohort list.

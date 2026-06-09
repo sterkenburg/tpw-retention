@@ -1,4 +1,4 @@
-"""Build cohort_assignment (WS-C) — stable-hash holdout for the retention pilot.
+"""Build cohort_assignment (WS-C) — stable-hash holdout for the lifecycle pilot.
 
     python jobs/build_cohort.py [experiment_id]
 

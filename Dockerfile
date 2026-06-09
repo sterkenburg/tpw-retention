@@ -1,4 +1,4 @@
-# TPW Retention Platform — Cloud Run
+# TPW Lifecycle Platform — Cloud Run
 # Supports both Streamlit dashboard and FastAPI via environment variable
 
 FROM python:3.11-slim

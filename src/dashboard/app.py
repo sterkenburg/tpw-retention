@@ -19,7 +19,7 @@ import streamlit as st
 
 from data import client
 
-st.set_page_config(page_title="TPW Retention", layout="wide")
+st.set_page_config(page_title="TPW Lifecycle", layout="wide")
 
 
 def load_latest_signals():
@@ -49,7 +49,7 @@ def load_actions():
 # ------------------------------------------------------------------
 # Header
 # ------------------------------------------------------------------
-st.title("TPW Retention Dashboard")
+st.title("TPW Lifecycle Dashboard")
 st.caption("At-risk suppliers requiring attention")
 
 # ------------------------------------------------------------------

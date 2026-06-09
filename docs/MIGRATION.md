@@ -1,4 +1,4 @@
-# Migration from churn_prediction to tpw-retention
+# Migration from churn_prediction to tpw-lifecycle
 
 ## What Was Extracted
 
@@ -64,7 +64,7 @@ churn_prediction/
 
 ### New System
 ```
-tpw-retention/
+tpw-lifecycle/
 ├── 1 daily pipeline (jobs/daily_pipeline.py)
 ├── 1 churn scorer (src/signals/churn_scorer.py, ~150 lines)
 ├── Clean dashboard (src/dashboard/app.py, ~150 lines)
@@ -79,7 +79,7 @@ tpw-retention/
 ### 1. Create BigQuery Dataset and Tables
 
 ```bash
-cd tpw-retention
+cd tpw-lifecycle
 python jobs/setup_bigquery.py
 ```
 
@@ -114,9 +114,9 @@ gcloud builds submit --config cloudbuild.yaml
 ### 5. Set Up Cloud Scheduler
 
 ```bash
-gcloud scheduler jobs create http tpw-daily-retention \
+gcloud scheduler jobs create http tpw-daily-lifecycle \
     --schedule="0 7 * * *" \
-    --uri="https://tpw-retention-api-xxx.run.app/jobs/daily" \
+    --uri="https://tpw-lifecycle-api-xxx.run.app/jobs/daily" \
     --http-method=POST \
     --time-zone="Europe/Amsterdam"
 ```
@@ -125,7 +125,7 @@ gcloud scheduler jobs create http tpw-daily-retention \
 
 Update your existing lead system to POST to:
 ```
-POST https://tpw-retention-api-xxx.run.app/webhooks/lead
+POST https://tpw-lifecycle-api-xxx.run.app/webhooks/lead
 ```
 
 ### 7. Archive Old System
