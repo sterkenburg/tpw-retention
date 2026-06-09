@@ -18,14 +18,16 @@ from actions import directives
 
 def run(experiment_id: str = "stage1_exposure") -> None:
     df = directives.build(experiment_id)
+    applicable = directives.levers_for(experiment_id)
     print(f"Experiment: {experiment_id}")
-    print(f"Directives written: {len(df)}  (treatment suppliers × {len(directives.LEVERS)} levers)")
+    print(f"Directives written: {len(df)}  (treatment suppliers × {len(applicable)} levers: {', '.join(applicable)})")
     if df.empty:
         return
     print("\nBy type × status:")
     print(df.groupby(["type", "status"]).size().to_string())
     print("\nChannel gating (flip ON after the spike lands):")
-    for typ, spec in directives.LEVERS.items():
+    for typ in applicable:
+        spec = directives.LEVERS[typ]
         enabled = directives._DIR_CFG.get(spec["enable_flag"], False)
         state = "ENABLED" if enabled else f"gated → {spec['spike']}"
         print(f"  {typ:<11} {spec['channel']:<22} {state}")

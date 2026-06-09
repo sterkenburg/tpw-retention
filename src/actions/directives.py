@@ -128,6 +128,17 @@ def _status_for(spec: dict, now: pd.Timestamp) -> tuple[str, str, object]:
     return "delivered", "", now
 
 
+def lever_status(lever_type: str) -> tuple[str, str]:
+    """(status, note) for a lever under current channel gating — for journey/previews."""
+    status, note, _ = _status_for(LEVERS[lever_type], pd.Timestamp.now())
+    return status, note
+
+
+def levers_for(experiment_id: str) -> list[str]:
+    """The lever types that `generate(experiment_id)` would emit for this experiment."""
+    return [t for t, s in LEVERS.items() if experiment_id in s["experiments"]]
+
+
 def generate(experiment_id: str = "stage1_exposure") -> pd.DataFrame:
     """Compute the directive set for the treatment arm (does not write)."""
     treat = sorted(cohort.treatment_ids(experiment_id))

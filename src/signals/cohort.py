@@ -40,6 +40,7 @@ import pandas as pd
 import yaml
 
 from data import client
+from signals import targeting
 
 _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "config", "settings.yaml")
 with open(_CONFIG_PATH) as _f:
@@ -131,10 +132,12 @@ def _eligible(experiment_id: str) -> pd.DataFrame:
         if spec.get("categories"):
             mask &= df["category"].isin(spec["categories"])
     elif mode == "churned":
-        # supplier_targeting is active-only today → this is empty until the churned
-        # feed lands (doc 28). Honest no-op, not fabricated rows.
+        # Lapsed = renewal_status NOT in the retained allowlist. 'already_renewed' is
+        # retained (future term), so it is NOT winback. supplier_targeting is built
+        # from active suppliers today → empty until the churned feed lands (doc 28).
+        # Honest no-op, not fabricated rows.
         if "renewal_status" in df.columns:
-            mask = df["renewal_status"] != "active"
+            mask = ~df["renewal_status"].isin(targeting.RETAINED_STATUSES)
         else:
             mask = pd.Series(False, index=df.index)
         if spec.get("categories"):

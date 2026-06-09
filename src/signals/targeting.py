@@ -40,6 +40,13 @@ _EXPOSURE_TABLE = (
 # median) from the multi-driver analysis (docs/strategy/17 §2c).
 LOW_EXPOSURE_VIEWS_YR = 330
 
+# renewal_status values that mean the supplier is still in a paid relationship —
+# 'active' (current term) or 'already_renewed' (a future paid term exists). Anything
+# else is genuinely lapsed (the winback pool). Defined as an allowlist so unknown
+# future churned markers default to lapsed, not retained. NOTE: supplier_targeting is
+# built from ACTIVE suppliers, so no lapsed rows appear yet (doc 28 churned-feed item).
+RETAINED_STATUSES = {"active", "already_renewed"}
+
 VENUE_CATEGORY = "Trouwlocaties"
 # Wrong-model retail: couples don't shortlist-and-inquire → exposure lever N/A.
 WRONG_MODEL_CATEGORIES = {

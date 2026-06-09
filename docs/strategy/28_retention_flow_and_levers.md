@@ -16,6 +16,7 @@ extend coverage to the *other* validated churn drivers.
 |---|---|
 | **The gap it closes** | The four built levers (`boost`, `optimize`, `newsletter`, `email`) all attack **one** validated driver — *exposure*. The multivariate work ([churn-drivers]) found three: **exposure, first-term tenure, dashboard engagement**. Two were unserved. |
 | **The structural change** | A **segmentation** step routes each supplier to a *population* (new / at-risk / high-value / churned), and each population gets its own **experiment** + lever-set. Levers are now scoped per experiment, so adding one never disturbs the live `stage1_exposure` pilot. |
+| **Journey layer (built)** | `signals/journey.py` places each supplier in one lifecycle **stage** and maps it to next-best levers; `jobs/preview_journey.py` is a read-only dry-run of the whole journey on real suppliers. Makes the flow observable before any channel is enabled (§1a). |
 | **What's added now (code)** | **`onboarding`** lever + experiment (first-term tenure) and **`winback`** lever + experiment (lapsed suppliers). Both gated (`onboarding_enabled`, `winback_enabled` = false), computed-but-inert until their cohorts populate. |
 | **What's proposed (doc-only)** | `offer` (right-pricing), `reengage` (dashboard nudge — blocked on login telemetry), `alert` (CSM hand-off), `survey` (feedback loop). |
 | **Decisions locked** | Segmentation = yes (multi-experiment). Win-back = in scope. Onboarding + winback = added. Offer/reengage/alert/survey = staged, greenlit individually. |
@@ -80,6 +81,35 @@ The one structural addition versus the prior architecture (doc 19) is the
 populations — and a brand-new supplier and a churned supplier cannot live in the
 same experiment. Segmentation makes the population explicit and maps each
 unserved driver to a population that now has a lever.
+
+### 1a. Journey layer (built) — lifecycle stage + next-best-action
+
+`signals/journey.py` makes the segmentation **observable**: it places each supplier in
+a single lifecycle **stage** from columns already in `supplier_targeting` (no new data)
+and maps the stage to its next-best levers (single-sourced from `directives.LEVERS`).
+`jobs/preview_journey.py` is a **read-only dry-run** — it dispatches nothing, it just
+shows the journey on real suppliers and the gate blocking each action. This is what
+turns the flat catalog into an inspectable, ordered path while every channel is gated.
+
+Stages (priority order, first match wins) and the live readout (latest snapshot,
+N=1,444):
+
+| Stage | Definition | Next-best action | Count |
+|---|---|---|---:|
+| `lapsed` | `renewal_status` not retained (churned) | `winback` | 0 |
+| `onboarding` | active, `first_term` | `onboarding` | 217 |
+| `renewal_window` | active, `0 ≤ days_until_renewal ≤ 60` | `boost` + `email` | 63 |
+| `at_risk` | active, `at_risk_tier ∈ {P1,P2}` | full stage-1 set | 175 |
+| `healthy` | retained / low-risk (incl. `already_renewed`) | monitor (no directive) | 989 |
+
+> **`already_renewed` is retained, not churned.** Live data shows the only non-active
+> status is `already_renewed` (a *future* paid term exists) — there are **zero genuinely
+> churned rows** in targeting (it's active-only). So `lapsed` = 0 today, consistent with
+> the winback churned-feed gap (§5). The retained allowlist lives in
+> `targeting.RETAINED_STATUSES` and is shared by the journey stage and winback eligibility.
+
+Still ahead for this layer: a **persisted `supplier_journey` table** (today it's a
+derived view) and **event triggers** (today it's batch) — see §4.
 
 ---
 
@@ -150,9 +180,10 @@ when the owning decision (§5) is greenlit. Built lever entries for the two new 
   escalation ladder (e.g. email → newsletter → `alert`) and a **cross-channel
   frequency cap**, not just per-lever `dedup_days`. Not required for the 4-lever
   stage1 pilot; required before multiple levers fire at one supplier.
-- **Trigger model.** Stage1 is batch/monthly. `offer`, `reengage`, `alert` are
-  naturally **event-triggered** (drop/lapse detected → fire). Decide whether the
-  flow stays batch or gains an event path before those go live.
+- **Trigger model.** Stage1 is batch/monthly. The journey layer (§1a) now computes a
+  per-supplier stage each run, which is the hook an event path would fire on. `offer`,
+  `reengage`, `alert` are naturally **event-triggered** (drop/lapse detected → fire);
+  decide whether the flow stays batch or gains an event path before those go live.
 
 ---
 
@@ -165,6 +196,9 @@ when the owning decision (§5) is greenlit. Built lever entries for the two new 
    pre-churn. ✔
 3. **`onboarding` + `winback` added** to `LEVERS`, `EXPERIMENTS`, and `settings.yaml`
    (gated). ✔
+4. **Journey layer built** (§1a) — `signals/journey.py` (lifecycle stage +
+   next-best-action) and `jobs/preview_journey.py` (read-only dry-run). Run live:
+   217 onboarding / 175 at-risk / 63 renewal-window / 989 healthy / 0 lapsed. ✔
 
 **Open (owner action before these populate / go live):**
 - **Winback churned-supplier source.** `supplier_targeting` is built from **active**
@@ -177,7 +211,10 @@ when the owning decision (§5) is greenlit. Built lever entries for the two new 
   to size offers by real revenue.
 - **Reengage lever (`#8`).** Blocked on real dashboard-login telemetry — only the GA4
   public-profile proxy exists today (doc 24). Scaffold gated; do not flip live.
+- **Persist + trigger the journey** — a written `supplier_journey` table (today it's a
+  derived view) and an **event path** off the per-supplier stage (today batch). §1a, §4.
 - **Sequencing + frequency cap** and the **batch-vs-event** trigger decision (§4)
-  before more than one lever dispatches per supplier.
+  before more than one lever dispatches per supplier — the journey stage (§1a) is the
+  natural hook for both.
 
 [churn-drivers]: ./17_refined_retention_strategy.md
