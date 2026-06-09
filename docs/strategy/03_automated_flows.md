@@ -1,5 +1,7 @@
 # Automated Retention Flows — Detailed Playbooks
 
+> **⚠️ DELIVERY OUTDATED (May 22).** Email/SMS delivery now goes through **Bird.com / `marketing_flow`** ([doc 25](25_spike4_bird_email_newsletter_answer.md)), **not** SendGrid or a standalone tool. The flow designs/triggers remain reusable; the tooling-stack recommendations are superseded.
+
 These flows replace high-touch AM work with automated, trigger-based interventions. Built for TPW's supplier base.
 
 ---

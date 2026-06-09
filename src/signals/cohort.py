@@ -21,9 +21,16 @@ Design (docs/strategy/18 §pilot, doc 20 WS-C):
   - Stage-1 pool  = low-exposure photographers (± videographers/music) — the
                     fast exposure-lift mechanism test (~82/arm, well-powered).
 
-Reads `supplier_targeting` (WS-B, US retention) for the eligible pool; writes
-`cohort_assignment` (US retention). Stage-2 (renewal endpoint) reuses this module
+Reads `supplier_targeting` (WS-B, EU `retention`) for the eligible pool; writes
+`cohort_assignment` (EU `retention`). Stage-2 (renewal endpoint) reuses this module
 with a wider category pool + a renewal-window enrolment gate.
+
+Each experiment declares an `eligibility` mode that selects its population:
+  - category_bundle : low-exposure bundle pool in named categories (stage1_exposure)
+  - first_term      : suppliers in their first paid term (onboarding)
+  - churned         : lapsed suppliers (winback) — NOTE: supplier_targeting is built
+                      from ACTIVE suppliers only, so the churned feed must be wired
+                      before this cohort populates (docs/strategy/28 follow-ups).
 """
 
 import hashlib
@@ -49,12 +56,32 @@ _COHORT_TABLE = _CONFIG["tables"]["cohort_assignment"]
 EXPERIMENTS = {
     "stage1_exposure": {
         "cohort": "low_exposure_photo_video_music",
+        "eligibility": "category_bundle",
         # Stage-1 mechanism test: fast exposure-lift endpoint, ~6–8 wks.
         "categories": {"Trouwfotograaf", "Videograaf", "Muziek"},
         # None → enrol every eligible supplier (Stage-1 wants N for the lift
         # endpoint, not renewal proximity). Stage-2 sets this to 90.
         "renewal_window_days": None,
         "salt": "stage1_exposure_v1",
+    },
+    # First-term activation cohort — targets the validated year-1 churn cliff.
+    # Population = suppliers in their first paid term, any lead-driven category.
+    "onboarding": {
+        "cohort": "first_term_suppliers",
+        "eligibility": "first_term",
+        "categories": None,           # any category; first_term is the gate
+        "renewal_window_days": None,
+        "salt": "onboarding_v1",
+    },
+    # Reactivation cohort — lapsed suppliers. Eligibility returns empty until the
+    # churned-supplier feed is wired into targeting (doc 28 follow-up); registered
+    # now so the lever + holdout machinery are in place and testable.
+    "winback": {
+        "cohort": "recently_churned",
+        "eligibility": "churned",
+        "categories": None,
+        "renewal_window_days": None,
+        "salt": "winback_v1",
     },
 }
 
@@ -93,10 +120,27 @@ def _eligible(experiment_id: str) -> pd.DataFrame:
     if "stats_date" in df.columns:
         df = df[df["stats_date"] == df["stats_date"].max()]
 
-    mask = df["bundle_eligible"] & df["category"].isin(spec["categories"])
-    window = spec["renewal_window_days"]
-    if window is not None:
-        mask &= df["days_until_renewal"].between(0, window)
+    mode = spec.get("eligibility", "category_bundle")
+    if mode == "category_bundle":
+        mask = df["bundle_eligible"] & df["category"].isin(spec["categories"])
+        window = spec["renewal_window_days"]
+        if window is not None:
+            mask &= df["days_until_renewal"].between(0, window)
+    elif mode == "first_term":
+        mask = df["first_term"].fillna(False).astype(bool)
+        if spec.get("categories"):
+            mask &= df["category"].isin(spec["categories"])
+    elif mode == "churned":
+        # supplier_targeting is active-only today → this is empty until the churned
+        # feed lands (doc 28). Honest no-op, not fabricated rows.
+        if "renewal_status" in df.columns:
+            mask = df["renewal_status"] != "active"
+        else:
+            mask = pd.Series(False, index=df.index)
+        if spec.get("categories"):
+            mask &= df["category"].isin(spec["categories"])
+    else:
+        raise ValueError(f"Unknown eligibility mode for {experiment_id}: {mode}")
     return df[mask].copy()
 
 

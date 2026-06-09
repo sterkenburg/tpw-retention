@@ -1,6 +1,6 @@
 """WS-B — targeting + exposure-trend signal.
 
-Combines the EU exposure rollup (`retention_eu.supplier_exposure_daily`, WS-A)
+Combines the EU exposure rollup (`retention.supplier_exposure_daily`, WS-A)
 with the europe-west3 business data (`business_development` via
 `data.suppliers.get_current`) into one per-supplier targeting row:
 

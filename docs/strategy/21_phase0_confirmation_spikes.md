@@ -17,7 +17,7 @@ Each spike is **investigation only** — produce a documented answer + effort es
 | 3 | Exposure features in churn model | me (churn_prediction) | P1 | M | Better targeting (not Stage-1-blocking) |
 | 4 | Supplier email + couple-newsletter via Bird | me (marketing_flow) | P1 | S–M | Email + newsletter levers |
 | 5 | Scraper cohort trigger | me (profile_auto_complete) | P1 | S | Bundle step 2 (profile optimize) |
-| 6 | `matched_invoices` → `profile_id` join | me (invoice_service) | P2 | S | Accurate value/churn measurement |
+| 6 | `moneybird.*` → `profile_id` join | me (invoice_service) | P2 | S | Accurate value/churn measurement |
 
 **Critical path:** Spike 1 (Elastic) — the core lever and only externally-owned dependency. Front-load it. Spike 2 is the foundation everything reads from.
 
@@ -92,12 +92,14 @@ Each spike is **investigation only** — produce a documented answer + effort es
 
 ---
 
-## Spike 6 — `matched_invoices` → `profile_id` join  · P2 · invoice_service
+## Spike 6 — `moneybird.*` → `profile_id` join  · P2 · invoice_service
 
-**Context:** `finance_dashboard.matched_invoices` (Moneybird) is the revenue source of truth for ARR/churn-value/right-pricing and outcome measurement.
+> **Answered in [doc 27](27_spike6_invoice_profile_join_answer.md) (YOO-233, Done).** Two corrections surfaced live: the table is **`moneybird.mb-2015-2020` + `moneybird.mb-contacts`** (Drive-backed external), **not** `finance_dashboard.matched_invoices` (which does not exist); coverage is **98.6% of active paid suppliers**.
+
+**Context:** the Moneybird invoice tables (`moneybird.mb-2015-2020` + `moneybird.mb-contacts`) are the revenue source of truth for ARR/churn-value/right-pricing and outcome measurement.
 
 **Questions:**
-- Grain of `matched_invoices`? Key to supplier (`customer_id`/`moneybird_customer_id` → `profile_id` via `companies_profiles`)? Match/coverage rate?
+- Grain of `moneybird.mb-2015-2020`? Key to supplier (`klantnummer` → `mb-contacts.customer_id` / `companies_profiles.moneybird_customer_id` → `profile_id`)? Match/coverage rate?
 - Reliable per-supplier ARR + churn-value derivation?
 
 **Definition of done:** documented join key + coverage + a per-supplier revenue view. (Stage-1 can proceed on `business_development.plan_value` as interim.)

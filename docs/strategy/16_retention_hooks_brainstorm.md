@@ -1,5 +1,7 @@
 # Retention Hooks Brainstorm — Non-Monetary Value-Add Ideas
 
+> **⚠️ PARTIALLY SUPERSEDED (May 22 brainstorm).** The headline **Ad Boost Pool** (supplier-pays-more for leads) is **rejected** as a retention lever by [docs 17](17_refined_retention_strategy.md)–[18](18_value_add_bundle_and_pilot.md) (adverse selection; "pay more for leads" doesn't land with suppliers who feel overcharged). The individual hooks remain design inspiration for later phases.
+
 **Date:** 2026-05-22  
 **Context:** Brainstorm session exploring creative retention offers that do not involve discounts or out-of-pocket costs. Focus on positive value-adds that work for below-average performers and create genuine product stickiness.
 
