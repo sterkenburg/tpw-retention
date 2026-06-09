@@ -34,6 +34,9 @@ yarn-error.log*
 *-key.json
 service-account*.json
 
+# Claude Code local settings
+.claude/
+
 # Misc
 *.log
 *.tmp

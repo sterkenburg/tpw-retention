@@ -7,12 +7,26 @@ Source tables:
   tpw-ga4-bigquery.churn_prediction.profiles
 """
 
+import os
+
 import pandas as pd
+import yaml
 
 from .client import query
 
 _BUSINESS_TABLE = "tpw-ga4-bigquery.churn_prediction.business_development"
 _PROFILES_TABLE = "tpw-ga4-bigquery.churn_prediction.profiles"
+
+# --- Optional supplier email source (D1) ---------------------------------
+# There is no email column in the business/profiles tables yet. When an email
+# feed becomes available, configure it in config/settings.yaml under
+# sources.supplier_email_table / supplier_email_column and it is joined in
+# automatically. Until then, `email` is NULL and suppliers are not emailable.
+_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "config", "settings.yaml")
+with open(_CONFIG_PATH) as _f:
+    _SOURCES = yaml.safe_load(_f).get("sources", {})
+_EMAIL_TABLE = _SOURCES.get("supplier_email_table") or ""
+_EMAIL_COLUMN = _SOURCES.get("supplier_email_column") or ""
 
 
 def get_current() -> pd.DataFrame:
@@ -21,7 +35,22 @@ def get_current() -> pd.DataFrame:
     Excludes suppliers whose latest plan is Gratis (churned).
     Flags suppliers with a future Gratis plan as 'will_churn'.
     Flags suppliers with a future paid plan as 'already_renewed'.
+
+    Includes an `email` column if a supplier email source is configured
+    (sources.supplier_email_table / supplier_email_column); otherwise `email`
+    is NULL for every row and suppliers are not emailable.
     """
+    # Build the optional email join. Keep it isolated so the rest of the query
+    # is unchanged whether or not an email source is configured.
+    if _EMAIL_TABLE and _EMAIL_COLUMN:
+        email_select = f"em.{_EMAIL_COLUMN} AS email"
+        email_join = f"""
+    LEFT JOIN `{_EMAIL_TABLE}` em
+        ON CAST(b.profile_id AS STRING) = CAST(em.profile_id AS STRING)"""
+    else:
+        email_select = "CAST(NULL AS STRING) AS email"
+        email_join = ""
+
     sql = f"""
     WITH ordered_plans AS (
         SELECT
@@ -58,6 +87,7 @@ def get_current() -> pd.DataFrame:
         b.next_plan_comparison,
         b.converted_lead,
         p.profile_telephone AS phone,
+        {email_select},
         np.next_plan_name,
         np.next_plan_start,
         CASE
@@ -69,7 +99,7 @@ def get_current() -> pd.DataFrame:
     LEFT JOIN `{_PROFILES_TABLE}` p
         ON b.profile_id = p.profile_id
     LEFT JOIN next_plan np
-        ON b.profile_id = np.profile_id
+        ON b.profile_id = np.profile_id{email_join}
     WHERE b.plan_name != 'Gratis'
       AND b.plan_end >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
     """

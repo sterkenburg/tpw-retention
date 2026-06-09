@@ -5,30 +5,34 @@ Runs at 7 AM via Cloud Scheduler.
 2. Calculate supplier stats
 3. Calculate signals (churn, engagement, renewal)
 4. Determine actions
-5. Execute actions (CRM tasks, Slack)
+5. Execute actions (CRM tasks, emails, Slack)
 6. Save everything to BigQuery
 
-Note: Email actions are disabled until email addresses are available.
+Email flows (renewal prep / re-engagement / monthly results) are wired in but
+run in DRY-RUN by default — they compute and log who would be emailed without
+sending. Set EMAIL_DRY_RUN=false (+ SENDGRID_API_KEY) and configure a supplier
+email source (sources.supplier_email_* in settings.yaml) to send for real.
 """
 
 import sys
-from datetime import datetime
+from collections import Counter
+from datetime import date, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import pandas as pd
 
-from actions import crm, slack
+from actions import crm, emails, flows, slack
 from analytics import projected_value, supplier_stats
 from data import activity, client, leads, suppliers
 from signals import churn_scorer, engagement
 
 
 def run():
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"TPW Retention Pipeline — {datetime.now().isoformat()}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     # ------------------------------------------------------------------
     # 1. Load data
@@ -50,7 +54,9 @@ def run():
     # ------------------------------------------------------------------
     print("[2/6] Calculating supplier stats...")
     stats = supplier_stats.calculate(
-        df_suppliers, df_activity, df_leads,
+        df_suppliers,
+        df_activity,
+        df_leads,
         contract_activity=df_contract_activity,
         contract_leads=df_contract_leads,
     )
@@ -92,17 +98,47 @@ def run():
             risk_factors=row["risk_factors"],
             account_manager=row.get("account_manager", ""),
         )
-        actions_taken.append({
-            "profile_id": row["profile_id"],
-            "action_type": "crm_task",
-            "action_detail": "P1 retention task",
-            "executed": created,
-            "action_date": pd.Timestamp.now(),
-        })
+        actions_taken.append(
+            {
+                "profile_id": row["profile_id"],
+                "action_type": "crm_task",
+                "action_detail": "P1 retention task",
+                "executed": created,
+                "action_date": pd.Timestamp.now(),
+            }
+        )
     print(f"        CRM tasks created: {sum(a['executed'] for a in actions_taken)}")
 
-    # NOTE: Email actions disabled until supplier email addresses are available
-    # TODO: Add email source (profiles table, CRM, or separate user table)
+    # Email flows → renewal prep, re-engagement, monthly results.
+    # Sends are gated by emails.is_dry_run() (default ON): while dry-run, this
+    # computes and logs who *would* be emailed but calls no provider. Going live
+    # = set SENDGRID_API_KEY and EMAIL_DRY_RUN=false. Email addresses come from
+    # the optional source configured in sources.supplier_email_* (none yet, so
+    # email_actions is empty until that feed exists).
+    emailable = signals["email"].apply(flows.is_emailable).sum() if "email" in signals else 0
+    recently_sent = emails.recent_sends()
+    email_actions = flows.determine_email_actions(signals, date.today(), recently_sent)
+    flow_counts = Counter(a.flow for a in email_actions)
+
+    sent_actions = []
+    for a in email_actions:
+        ok = emails.send(a)
+        actions_taken.append(
+            {
+                "profile_id": a.profile_id,
+                "action_type": f"email:{a.flow}",
+                "action_detail": a.subject,
+                "executed": ok,
+                "action_date": pd.Timestamp.now(),
+            }
+        )
+        if ok:
+            sent_actions.append(a)
+    emails.log_sends(sent_actions)
+
+    mode = "DRY-RUN (nothing sent)" if emails.is_dry_run() else f"sent {len(sent_actions)}"
+    print(f"        Emailable suppliers: {emailable}/{len(signals)}")
+    print(f"        Email actions: {len(email_actions)} {dict(flow_counts)} — {mode}")
 
     # ------------------------------------------------------------------
     # 5. Save to BigQuery
@@ -111,18 +147,38 @@ def run():
 
     # Supplier stats — align columns to BigQuery schema
     stats_cols = [
-        "profile_id", "profile_name", "email", "phone", "category",
-        "plan_name", "plan_value", "plan_start", "plan_end",
-        "days_until_renewal", "business_status", "account_manager",
-        "profile_completion_pct", "profile_views_60d", "profile_views_60_90d",
-        "engagement_trend", "leads_60d", "days_since_last_lead",
-        "days_since_last_login", "estimated_value_30d",
-        "contract_views_total", "contract_leads_total",
-        "category_avg_views_60d", "category_avg_leads_60d",
+        "profile_id",
+        "profile_name",
+        "email",
+        "phone",
+        "category",
+        "plan_name",
+        "plan_value",
+        "plan_start",
+        "plan_end",
+        "days_until_renewal",
+        "business_status",
+        "account_manager",
+        "profile_completion_pct",
+        "profile_views_60d",
+        "profile_views_60_90d",
+        "engagement_trend",
+        "leads_60d",
+        "days_since_last_lead",
+        "days_since_last_login",
+        "estimated_value_30d",
+        "contract_views_total",
+        "contract_leads_total",
+        "category_avg_views_60d",
+        "category_avg_leads_60d",
         "renewal_status",
-        "benchmark_views_top10pct", "benchmark_leads_top10pct",
-        "churn_probability", "priority_tier", "risk_factors",
-        "recommended_action", "stats_date",
+        "benchmark_views_top10pct",
+        "benchmark_leads_top10pct",
+        "churn_probability",
+        "priority_tier",
+        "risk_factors",
+        "recommended_action",
+        "stats_date",
     ]
     stats_df = signals.copy()
     for col in stats_cols:
@@ -136,8 +192,12 @@ def run():
 
     # Signals (subset)
     signals_cols = [
-        "profile_id", "churn_probability", "priority_tier",
-        "risk_factors", "recommended_action", "stats_date",
+        "profile_id",
+        "churn_probability",
+        "priority_tier",
+        "risk_factors",
+        "recommended_action",
+        "stats_date",
     ]
     client.delete_today("signals_daily", date_column="stats_date")
     client.write(signals[signals_cols], "signals_daily", if_exists="append")
@@ -154,7 +214,8 @@ def run():
     # 6. Slack summary
     # ------------------------------------------------------------------
     print("[6/6] Posting Slack summary...")
-    revenue_at_risk = p1["plan_value"].sum() + signals[signals["priority_tier"] == "P2"]["plan_value"].sum()
+    p2_value = signals[signals["priority_tier"] == "P2"]["plan_value"].sum()
+    revenue_at_risk = p1["plan_value"].sum() + p2_value
     slack.send_summary(
         total_suppliers=len(signals),
         p1_count=len(p1),
@@ -164,9 +225,9 @@ def run():
     )
     print("        → Slack sent")
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Pipeline complete.")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
 
 if __name__ == "__main__":

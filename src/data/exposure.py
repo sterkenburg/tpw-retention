@@ -1,0 +1,115 @@
+"""Build `supplier_exposure_daily` — the per-supplier daily exposure rollup (WS-A).
+
+Source: `ga4_dataform_reporting.monthly_profile_stats` — a (profile_id, date,
+event_name) skeleton where the metric column **named after event_name** holds the
+value (the `view_item` row populates `view_item`, the `view_item_list` row
+populates `view_item_list`, etc.). We collapse the per-event rows into one
+exposure row per (profile_id, date).
+
+The aggregation runs **inside BigQuery** (the source is ~388M rows — never pulled
+to pandas). Source and destination are both in the EU location, so it's a pure
+server-side INSERT…SELECT.
+
+Exposure is what drives retention (see docs/strategy/17). Category/segment and
+Elastic rank are intentionally NOT joined here (different BQ region / source);
+they're added downstream in the targeting step.
+
+Lives in the EU `retention_eu` dataset (co-located with the source). The existing
+`retention` platform dataset is in US — they cannot be joined in one BQ job.
+
+COVERAGE CAVEAT: the source only populates the funnel metrics (view_item,
+view_item_list, show_phone, select_item) from **2025-01 onward** — pre-2025 rows
+exist but are null, so profile_views/impressions are 0 before 2025. Sufficient for
+current/recent at-risk targeting; for a longer history, blend in raw
+`ga4_dataform_output.view_item` (2023+) — see Spike 2 (YOO-229).
+"""
+
+import os
+
+import yaml
+
+from . import client
+
+_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "config", "settings.yaml")
+with open(_CONFIG_PATH) as _f:
+    _CONFIG = yaml.safe_load(_f)
+
+# Lives in the EU dataset (co-located with the GA4 source so the aggregation is a
+# pure server-side INSERT…SELECT — the US `retention` dataset can't be joined to
+# EU sources in one job).
+_SOURCE = _CONFIG["sources"]["monthly_profile_stats"]
+_TABLE = f"{client.PROJECT_ID}.{client.DATASET_EU}.{_CONFIG['tables']['supplier_exposure']}"
+
+_COLUMNS = (
+    "profile_id, date, profile_views, impressions, list_clicks, show_phone, "
+    "website_open, wishlist, purchase, profile_total_time, ingested_at"
+)
+
+
+def ensure_table() -> None:
+    """Create the EU dataset (if needed) and the partitioned destination table."""
+    client.ensure_dataset(client.DATASET_EU, location="EU")
+    client.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS `{_TABLE}` (
+            profile_id STRING,
+            date DATE,
+            profile_views INT64,
+            impressions INT64,
+            list_clicks INT64,
+            show_phone INT64,
+            website_open INT64,
+            wishlist INT64,
+            purchase INT64,
+            profile_total_time INT64,
+            ingested_at TIMESTAMP
+        )
+        PARTITION BY date
+        """
+    )
+
+
+def build(start_date: str, end_date: str) -> int:
+    """(Re)build supplier_exposure_daily for the inclusive [start_date, end_date].
+
+    Idempotent: deletes the date range first, then inserts. Only profile-days with
+    at least one event are written (the source skeleton is mostly empty). Returns
+    the number of rows inserted.
+
+    Args:
+        start_date / end_date: 'YYYY-MM-DD'.
+    """
+    ensure_table()
+
+    # Idempotent refresh of the window.
+    client.execute(f"DELETE FROM `{_TABLE}` WHERE date BETWEEN '{start_date}' AND '{end_date}'")
+
+    job = client.execute(
+        f"""
+        INSERT INTO `{_TABLE}` ({_COLUMNS})
+        SELECT
+            profile_id, date, profile_views, impressions, list_clicks, show_phone,
+            website_open, wishlist, purchase, profile_total_time,
+            CURRENT_TIMESTAMP() AS ingested_at
+        FROM (
+            SELECT
+                CAST(profile_id AS STRING) AS profile_id,
+                date,
+                CAST(COALESCE(SUM(view_item), 0) AS INT64)          AS profile_views,
+                CAST(COALESCE(SUM(view_item_list), 0) AS INT64)     AS impressions,
+                CAST(COALESCE(SUM(select_item), 0) AS INT64)        AS list_clicks,
+                CAST(COALESCE(SUM(show_phone), 0) AS INT64)         AS show_phone,
+                CAST(COALESCE(SUM(website_open), 0) AS INT64)       AS website_open,
+                CAST(COALESCE(SUM(add_to_wishlist), 0) AS INT64)    AS wishlist,
+                CAST(COALESCE(SUM(purchase), 0) AS INT64)           AS purchase,
+                CAST(COALESCE(SUM(profile_total_time), 0) AS INT64) AS profile_total_time
+            FROM `{_SOURCE}`
+            WHERE date BETWEEN '{start_date}' AND '{end_date}'
+              AND profile_id IS NOT NULL
+            GROUP BY profile_id, date
+        )
+        WHERE profile_views > 0 OR impressions > 0 OR list_clicks > 0 OR show_phone > 0
+           OR website_open > 0 OR wishlist > 0 OR purchase > 0
+        """
+    )
+    return job.num_dml_affected_rows or 0

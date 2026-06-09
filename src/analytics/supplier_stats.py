@@ -125,6 +125,7 @@ def calculate(
     cols = [
         "profile_id",
         "profile_name",
+        "email",
         "phone",
         "category",
         "plan_name",

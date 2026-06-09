@@ -4,7 +4,11 @@
 
 bigquery:
   project_id: "tpw-ga4-bigquery"
-  dataset: "retention"              # new dataset for this platform
+  # Single EU dataset (migrated US→EU 2026-06-05 — holds EU supplier PII; co-located
+  # with GA4 (EU) sources). dataset_eu kept as an alias = dataset so EU-sourced
+  # rollups (exposure) and platform tables share one dataset.
+  dataset: "retention"              # EU
+  dataset_eu: "retention"           # EU (same dataset; was retention_eu before consolidation)
   location: "EU"
 
 # Source tables (from existing project)
@@ -20,9 +24,23 @@ sources:
   
   # Phone reveals — when couples click "show phone"
   phone_reveals_table: "tpw-ga4-bigquery.ga4_dataform_output.show_phone"
+
+  # Supplier email source (D1). No email column exists in the business/profiles
+  # tables yet. When an email feed becomes available, set:
+  #   supplier_email_table:  fully-qualified table with profile_id + email
+  #   supplier_email_column: the email column name on that table
+  # Until both are set, suppliers have no email and are simply not emailable
+  # (the daily pipeline reports how many addresses are missing).
+  supplier_email_table: ""
+  supplier_email_column: ""
   
   # Matches / inquiries
   matches_table: "tpw-ga4-bigquery.ga4_dataform_output.bedrijven_matches"
+
+  # Per-supplier daily funnel (reporting rollup; dashboard source). Skeleton of
+  # (profile_id, date, event_name) rows where the metric column named after
+  # event_name holds the value. Source for supplier_exposure_daily (WS-A).
+  monthly_profile_stats: "tpw-ga4-bigquery.ga4_dataform_reporting.monthly_profile_stats"
   
   # Lead conversion tracking (won/lost/accepted)
   conversions_table: "tpw-ga4-bigquery.ga4_dataform_customer_journey.cj_lead_scoring"
@@ -34,6 +52,10 @@ sources:
 # Retention tables (read/write — created by this platform)
 tables:
   supplier_stats: "supplier_stats_daily"
+  supplier_exposure: "supplier_exposure_daily"   # EU (retention)
+  supplier_targeting: "supplier_targeting"       # EU (retention)
+  cohort_assignment: "cohort_assignment"         # EU (retention) — holdout SoT
+  retention_directives: "retention_directives"   # EU (retention) — what each supplier gets
   signals: "signals_daily"
   actions_log: "actions_log"
   outcomes: "outcomes"
@@ -63,6 +85,29 @@ email:
   from_address: "leveranciers@theperfectwedding.nl"
   monthly_send_day: 1          # 1st of month
   monthly_send_hour: 9
+  # Master safety switch. When true (default), the pipeline computes and logs
+  # which emails *would* be sent but does not call SendGrid. Set the env var
+  # EMAIL_DRY_RUN=false (and provide SENDGRID_API_KEY) to send for real.
+  dry_run: true
+  # Minimum days between two sends of the same flow to one supplier (dedup).
+  dedup_days:
+    monthly_results: 25
+    re_engagement: 14
+    renewal_prep: 21
+
+# Directive emitters (WS-D). The platform COMPUTES directives for the treatment
+# arm regardless; these flags control whether a channel actually DISPATCHES.
+# Flip a channel ON only after its G0 confirmation spike proves the integration —
+# until then its directives are written with status='gated' (pending the spike).
+directives:
+  elastic_enabled: false      # boost  → Elastic; gated on YOO-228 (Elastic owner)
+  bird_enabled: false         # newsletter + email → Bird/marketing_flow; gated on Bird spike
+  scraper_enabled: false      # optimize → profile_auto_complete; gated on scraper spike
+  # Even when a channel is enabled, dry_run logs the dispatch instead of sending.
+  dry_run: true
+  # Exposure redistribution operates in the FREE/owned layer only — never the
+  # paid premium inventory (paid-product guardrail, docs/strategy/18 Lever 1).
+  boost_layer: "free"
 
 # Notifications
 notifications:

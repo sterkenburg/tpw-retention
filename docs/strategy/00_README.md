@@ -20,6 +20,15 @@ A comprehensive retention strategy for The Perfect Wedding (theperfectwedding.nl
 | 11 | [11_this_week_checklist.md](11_this_week_checklist.md) | Day-by-day actions to start immediately |
 | 12 | [12_churn_prediction_audit.md](12_churn_prediction_audit.md) | Audit of existing ML system + integration plan |
 | 13 | [13_technical_integration_spec.md](13_technical_integration_spec.md) | Concrete code/SQL to connect predictions to actions |
+| 14 | [14_todo_list.md](14_todo_list.md) | High-level todo list for implementing the retention strategy |
+| 15 | [15_actionable_retention_workflow.md](15_actionable_retention_workflow.md) | Actionable retention workflow playbook with lifecycle and signal-based triggers |
+| 16 | [16_retention_hooks_brainstorm.md](16_retention_hooks_brainstorm.md) | Brainstorm: non-monetary retention hooks — primary focus: Ad Boost Pool for solo categories |
+| 17 | [17_refined_retention_strategy.md](17_refined_retention_strategy.md) | **Evidence-led refined strategy** — supersedes assumptions in 01–16; churn driven by exposure/engagement/onboarding, not leads or price |
+| 18 | [18_value_add_bundle_and_pilot.md](18_value_add_bundle_and_pilot.md) | Value-add bundle (exposure redistribution + dashboard proof) + two-stage holdout pilot design |
+| 19 | [19_system_architecture.md](19_system_architecture.md) | System architecture — retention decisioning engine integrating Elastic, Bird.com (customer_journey/marketing_flow), GA4, supplier dashboard; holdout enforcement; Stage-1 build order |
+| 20 | [20_phased_implementation_plan.md](20_phased_implementation_plan.md) | Phased execution roadmap (Phase 0 confirmations → Stage-1 pilot → model/dashboard → Stage-2 readout & scale) with decision gates G0–G3 |
+| 21 | [21_phase0_confirmation_spikes.md](21_phase0_confirmation_spikes.md) | Seven ready-to-create confirmation spikes (Elastic boost, exposure rollup, model features, serving/Bird, newsletter, scraper, invoices) to clear gate G0 |
+| 22 | [22_elastic_boost_interface_contract.md](22_elastic_boost_interface_contract.md) | Interface contract for YOO-228 — the `retention_boost` published view, premium-isolated `function_score`, holdout/kill-switch guarantees, guardrail metrics (hand to TPW Elastic team) |
 
 ## The Core Insight
 
