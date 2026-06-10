@@ -1,51 +1,44 @@
+# CI/CD for the TPW Lifecycle daily pipeline.
+#
+# The deploy target is a Cloud Run *Job* — `tpw-lifecycle-daily` in project
+# tpw-ga4-bigquery / region europe-west4 — which runs `python jobs/daily_pipeline.py`.
+# A Cloud Scheduler job of the same name triggers it at 07:00 Europe/Amsterdam.
+# (There are no `-api` / `-dashboard` Cloud Run services: the supplier-facing
+# dashboard is the Next.js app on Vercel, the API is not deployed here.)
+#
+# NOTE: the Artifact Registry repo is still `tpw-retention`. Only the deploy
+# identity (job + scheduler) was renamed to lifecycle; the registry/data layer was
+# deliberately left on the `retention*` names, so the image path stays as-is.
+
 steps:
-  # Build container image
+  # Build the image (immutable :$COMMIT_SHA tag + a moving :latest)
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "build"
       - "-t"
-      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-lifecycle/app:$COMMIT_SHA"
+      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-retention/app:$COMMIT_SHA"
+      - "-t"
+      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-retention/app:latest"
       - "."
 
-  # Push to Artifact Registry
+  # Push both tags to Artifact Registry (must precede the job update below)
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "push"
-      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-lifecycle/app:$COMMIT_SHA"
+      - "--all-tags"
+      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-retention/app"
 
-  # Deploy API service
+  # Point the Cloud Run Job at the freshly built image
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
     args:
       - "run"
-      - "deploy"
-      - "tpw-lifecycle-api"
+      - "jobs"
+      - "update"
+      - "tpw-lifecycle-daily"
       - "--image"
-      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-lifecycle/app:$COMMIT_SHA"
+      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-retention/app:$COMMIT_SHA"
+      - "--project"
+      - "tpw-ga4-bigquery"
       - "--region"
       - "europe-west4"
-      - "--platform"
-      - "managed"
-      - "--allow-unauthenticated"
-      - "--set-env-vars"
-      - "APP_MODE=api"
-
-  # Deploy Dashboard service
-  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
-    entrypoint: gcloud
-    args:
-      - "run"
-      - "deploy"
-      - "tpw-lifecycle-dashboard"
-      - "--image"
-      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-lifecycle/app:$COMMIT_SHA"
-      - "--region"
-      - "europe-west4"
-      - "--platform"
-      - "managed"
-      - "--allow-unauthenticated"
-      - "--set-env-vars"
-      - "APP_MODE=dashboard"
-
-images:
-  - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-lifecycle/app:$COMMIT_SHA"
