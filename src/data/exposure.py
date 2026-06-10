@@ -14,8 +14,10 @@ Exposure is what drives retention (see docs/strategy/17). Category/segment and
 Elastic rank are intentionally NOT joined here (different BQ region / source);
 they're added downstream in the targeting step.
 
-Lives in the EU `retention_eu` dataset (co-located with the source). The existing
-`retention` platform dataset is in US — they cannot be joined in one BQ job.
+Lives in the EU `retention` dataset (co-located with the GA4 source so the
+aggregation is a pure server-side INSERT…SELECT). Since the 2026-06-05 US→EU
+migration the platform `retention` dataset is itself EU, so exposure and platform
+tables now share one dataset (`dataset` == `dataset_eu` == `retention`).
 
 COVERAGE CAVEAT: the source only populates the funnel metrics (view_item,
 view_item_list, show_phone, select_item) from **2025-01 onward** — pre-2025 rows
@@ -34,9 +36,9 @@ _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "config", "se
 with open(_CONFIG_PATH) as _f:
     _CONFIG = yaml.safe_load(_f)
 
-# Lives in the EU dataset (co-located with the GA4 source so the aggregation is a
-# pure server-side INSERT…SELECT — the US `retention` dataset can't be joined to
-# EU sources in one job).
+# Lives in the EU `retention` dataset (co-located with the GA4 source so the
+# aggregation is a pure server-side INSERT…SELECT). Post-migration the platform
+# dataset is also EU, so `DATASET_EU` and the platform dataset are the same.
 _SOURCE = _CONFIG["sources"]["monthly_profile_stats"]
 _TABLE = f"{client.PROJECT_ID}.{client.DATASET_EU}.{_CONFIG['tables']['supplier_exposure']}"
 

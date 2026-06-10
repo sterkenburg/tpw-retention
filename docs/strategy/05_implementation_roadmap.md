@@ -1,5 +1,7 @@
 # Implementation Roadmap
 
+> **⚠️ SUPERSEDED by [doc 20](20_phased_implementation_plan.md).** This is the pre-evidence 18-month roadmap; the actual execution plan (Phase 0–3 with gates G0–G3) lives in doc 20. Kept for history.
+
 ## Phase 0: Foundation (Weeks 1-4)
 **Theme: Learn before building**
 

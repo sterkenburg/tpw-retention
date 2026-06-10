@@ -1,6 +1,6 @@
 """WS-B — targeting + exposure-trend signal.
 
-Combines the EU exposure rollup (`retention_eu.supplier_exposure_daily`, WS-A)
+Combines the EU exposure rollup (`retention.supplier_exposure_daily`, WS-A)
 with the europe-west3 business data (`business_development` via
 `data.suppliers.get_current`) into one per-supplier targeting row:
 
@@ -39,6 +39,13 @@ _EXPOSURE_TABLE = (
 # Low-exposure threshold (views/yr) — the 42%→30% churn cliff (≈ photographer
 # median) from the multi-driver analysis (docs/strategy/17 §2c).
 LOW_EXPOSURE_VIEWS_YR = 330
+
+# renewal_status values that mean the supplier is still in a paid relationship —
+# 'active' (current term) or 'already_renewed' (a future paid term exists). Anything
+# else is genuinely lapsed (the winback pool). Defined as an allowlist so unknown
+# future churned markers default to lapsed, not retained. NOTE: supplier_targeting is
+# built from ACTIVE suppliers, so no lapsed rows appear yet (doc 28 churned-feed item).
+RETAINED_STATUSES = {"active", "already_renewed"}
 
 VENUE_CATEGORY = "Trouwlocaties"
 # Wrong-model retail: couples don't shortlist-and-inquire → exposure lever N/A.

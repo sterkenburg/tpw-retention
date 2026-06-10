@@ -5,12 +5,21 @@ should receive, writes those decisions to `retention_directives` (the single
 source of truth), and leaves DELIVERY to the systems that own each surface
 (Elastic, Bird/marketing_flow, profile_auto_complete). See docs/strategy/19.
 
-Four levers (docs/strategy/18, doc 20 WS-D1–D4):
+Levers are scoped to an EXPERIMENT / population via each lever's `experiments`
+list (docs/strategy/28). `generate(experiment_id)` only emits the levers whose
+population matches that experiment, so registering a lever for a new population
+never alters what the live `stage1_exposure` pilot dispatches.
+
+stage1_exposure — established at-risk suppliers (docs/strategy/18, doc 20 WS-D1–D4):
   - boost       → Elastic `retention_boost`, **free layer only** (the core lever)
   - optimize    → profile_auto_complete: optimize the profile before boosting it
                   (a boosted weak profile wastes the placement — always paired)
   - newsletter  → Bird/marketing_flow: feature the supplier in a couple newsletter
   - email       → Bird/marketing_flow: monthly exposure-first results email
+onboarding — first-term suppliers (the validated year-1 churn cliff, 38% vs 12%):
+  - onboarding  → Bird/marketing_flow: structured first-90-days activation sequence
+winback — lapsed suppliers (separate cohort, reactivation):
+  - winback     → Bird/marketing_flow: reactivation campaign
 
 **Holdout enforcement is structural here:** directives are generated ONLY for the
 treatment arm (`cohort.treatment_ids`); control suppliers can never receive one.
@@ -40,12 +49,15 @@ _TABLE = _CONFIG["tables"]["retention_directives"]
 _BOOST_LAYER = _DIR_CFG.get("boost_layer", "free")
 
 # Lever registry: type → channel, the enable flag that gates dispatch, the
-# blocking G0 spike, and the static params each directive carries.
+# blocking G0 spike, the experiments (populations) it applies to, and the static
+# params each directive carries. A lever only fires for an experiment listed in
+# its `experiments` — see generate().
 LEVERS = {
     "boost": {
         "channel": "elastic",
         "enable_flag": "elastic_enabled",
         "spike": "YOO-228 (Elastic boost)",
+        "experiments": ["stage1_exposure"],
         "params": {
             "directive": "retention_boost",
             "layer": _BOOST_LAYER,  # free/owned only — never paid premium
@@ -57,23 +69,47 @@ LEVERS = {
         "channel": "profile_auto_complete",
         "enable_flag": "scraper_enabled",
         "spike": "scraper optimize-trigger spike",
+        "experiments": ["stage1_exposure"],
         "params": {"action": "optimize_list", "reason": "paired_with_boost"},
     },
     "newsletter": {
         "channel": "bird_marketing_flow",
         "enable_flag": "bird_enabled",
         "spike": "Bird newsletter spike",
+        "experiments": ["stage1_exposure"],
         "params": {"campaign": "couple_newsletter_feature"},
     },
     "email": {
         "channel": "bird_marketing_flow",
         "enable_flag": "bird_enabled",
         "spike": "Bird email spike",
+        "experiments": ["stage1_exposure"],
         "params": {
             "template": "monthly_results",
             "exposure_first": True,        # lead with exposure, not leads
             "include_masked_leads": True,  # concrete proof; full PII in-dashboard only
         },
+    },
+    # First-term activation — targets the validated tenure driver (year-1 cliff).
+    # Its own experiment/cohort ('onboarding'); never emitted for stage1_exposure.
+    "onboarding": {
+        "channel": "bird_marketing_flow",
+        "enable_flag": "onboarding_enabled",
+        "spike": "onboarding-sequence design",
+        "experiments": ["onboarding"],
+        "params": {
+            "sequence": "first_90d",
+            "steps": ["welcome", "profile_push", "first_results", "renewal_runway"],
+            "exposure_first": True,
+        },
+    },
+    # Reactivation of lapsed suppliers — separate 'winback' cohort (churned pop).
+    "winback": {
+        "channel": "bird_marketing_flow",
+        "enable_flag": "winback_enabled",
+        "spike": "winback cohort + churned-supplier source",
+        "experiments": ["winback"],
+        "params": {"campaign": "reactivation", "max_lapsed_months": 6},
     },
 }
 
@@ -92,13 +128,26 @@ def _status_for(spec: dict, now: pd.Timestamp) -> tuple[str, str, object]:
     return "delivered", "", now
 
 
+def lever_status(lever_type: str) -> tuple[str, str]:
+    """(status, note) for a lever under current channel gating — for journey/previews."""
+    status, note, _ = _status_for(LEVERS[lever_type], pd.Timestamp.now())
+    return status, note
+
+
+def levers_for(experiment_id: str) -> list[str]:
+    """The lever types that `generate(experiment_id)` would emit for this experiment."""
+    return [t for t, s in LEVERS.items() if experiment_id in s["experiments"]]
+
+
 def generate(experiment_id: str = "stage1_exposure") -> pd.DataFrame:
     """Compute the directive set for the treatment arm (does not write)."""
     treat = sorted(cohort.treatment_ids(experiment_id))
+    # Only the levers whose population is this experiment (segmentation, doc 28).
+    levers = {t: s for t, s in LEVERS.items() if experiment_id in s["experiments"]}
     now = pd.Timestamp.now()
     rows = []
     for pid in treat:
-        for typ, spec in LEVERS.items():
+        for typ, spec in levers.items():
             status, note, delivered = _status_for(spec, now)
             rows.append({
                 "profile_id": pid,
@@ -133,7 +182,6 @@ def build(experiment_id: str = "stage1_exposure") -> pd.DataFrame:
         client.execute(
             f"DELETE FROM `{client.PROJECT_ID}.{client.DATASET}.{_TABLE}` "
             f"WHERE experiment_id = '{experiment_id}'",
-            location="US",
         )
     if not df.empty:
         client.write(df, _TABLE, if_exists="append")

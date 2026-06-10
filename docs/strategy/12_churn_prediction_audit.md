@@ -1,5 +1,7 @@
 # Churn Prediction System Audit & Integration Plan
 
+> **⚠️ EXECUTION PATH UPDATED — see [doc 24](24_spike3_churn_exposure_features_answer.md).** The external `churn_prediction` model is **not retrained** here; tpw-retention adds an exposure-driven **overlay** in `src/signals/targeting.py`. This audit's diagnosis of the model's limits remains valid.
+
 ## What You Have (The Good)
 
 Your churn prediction system is **substantially more sophisticated** than most companies at this stage:

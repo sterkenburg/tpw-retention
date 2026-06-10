@@ -103,6 +103,8 @@ directives:
   elastic_enabled: false      # boost  → Elastic; gated on YOO-228 (Elastic owner)
   bird_enabled: false         # newsletter + email → Bird/marketing_flow; gated on Bird spike
   scraper_enabled: false      # optimize → profile_auto_complete; gated on scraper spike
+  onboarding_enabled: false   # onboarding → Bird/marketing_flow; first-term cohort (doc 28)
+  winback_enabled: false      # winback → Bird/marketing_flow; lapsed-supplier cohort (doc 28)
   # Even when a channel is enabled, dry_run logs the dispatch instead of sending.
   dry_run: true
   # Exposure redistribution operates in the FREE/owned layer only — never the

@@ -1,5 +1,7 @@
 # Ready-to-Use Email Templates
 
+> **⚠️ DELIVERY OUTDATED.** These emails now dispatch via **Bird.com / `marketing_flow`** ([doc 25](25_spike4_bird_email_newsletter_answer.md)), not a standalone email service. The Dutch copy/structure below remains useful as template reference.
+
 All templates are in Dutch (primary) with English notes. Customize tone to match TPW brand voice.
 
 ---

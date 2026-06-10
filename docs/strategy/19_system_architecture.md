@@ -52,7 +52,7 @@ The retention brain is thin — it orchestrates these existing services:
 | **customer_journey** | **B2C venue flow** | **Out of scope — kept separate from retention** |
 | **marketing_flow** | Bird.com newsletter / marketing engine | **Supplier email + couple-newsletter delivery** |
 | **gads_api** | Venue Google Ads automation (the tripled budget) | Venue track (separate); source of venue exposure inflation |
-| **invoice_service** | Moneybird → `finance_dashboard.matched_invoices` | **Revenue source of truth** — ARR / churn-value / right-pricing |
+| **invoice_service** | Moneybird → `moneybird.mb-2015-2020` + `moneybird.mb-contacts` (Drive-backed external) | **Revenue source of truth** — ARR / churn-value / right-pricing (join + 98.6% coverage: doc 27) |
 
 ---
 
@@ -80,7 +80,7 @@ The retention brain is thin — it orchestrates these existing services:
 5. **Holdout integrity is central and enforced everywhere** (see below).
 6. **Targeting = extend the live `churn_prediction` model, not a parallel scorer.** It already segments new-vs-legacy (matches our tenure finding) and runs at ~100% precision but only **27.6% recall** — it misses 72% of churners precisely because it's lead/activity/business/call-centric and **lacks exposure features**. Adding exposure level+trend (+ dashboard-engagement) features there is the highest-value model change. The retention platform consumes its scores to target the bundle. (A simple rule-based override remains a fallback.)
 
-7. **Revenue source of truth = `invoice_service` (`finance_dashboard.matched_invoices`, Moneybird)** — use it for ARR, churn-value, and right-pricing inputs, not `business_development.plan_value`.
+7. **Revenue source of truth = `invoice_service` (`moneybird.mb-2015-2020` + `moneybird.mb-contacts`, Drive-backed external)** — use it for ARR, churn-value, and right-pricing inputs, not `business_development.plan_value`. Join key + coverage in doc 27 (Spike 6). *(Interim: `plan_value` until Drive scope lands; `finance_dashboard.matched_invoices` does not exist — corrected per doc 27.)*
 7. **Dashboard gets a new sibling reporting table**, not edits to `monthly_profile_stats` (which the live dashboard depends on).
 
 ---
@@ -134,7 +134,7 @@ The retention brain is thin — it orchestrates these existing services:
 - `churn_prediction`: ownership/path to add exposure features to the live model.
 - `marketing_flow`: the supplier email-directive + "featured suppliers" injection (both via Bird). *(customer_journey = B2C venue flow, intentionally not used.)*
 - `profile_auto_complete`: trigger interface for a cohort list.
-- `invoice_service`: join key from `matched_invoices` to `profile_id` for revenue/churn-value.
+- `invoice_service`: join key from `moneybird.mb-2015-2020` (`klantnummer` → `companies_profiles.moneybird_customer_id` → `profile_id`) for revenue/churn-value — see doc 27.
 
 ---
 

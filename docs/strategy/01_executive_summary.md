@@ -1,4 +1,7 @@
 # B2B Retention Strategy — The Perfect Wedding
+
+> **⚠️ SUPERSEDED IN PART (May 22, pre-evidence) — see [doc 17](17_refined_retention_strategy.md).** This summary assumes leads/pricing drive churn; the later evidence analysis found churn is driven by **exposure, tenure, and engagement — not leads or price**. Kept for history.
+
 ## Executive Summary
 
 **Current State**

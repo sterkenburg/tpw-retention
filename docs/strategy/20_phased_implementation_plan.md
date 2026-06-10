@@ -36,7 +36,7 @@ Turns the architecture into sequenced phases with deliverables, owning repos, de
 | Path to add exposure features to the live model | `churn_prediction` |
 | Supplier email-directive + "featured suppliers" injection (Bird) | `marketing_flow` |
 | Scraper cohort-trigger interface | `profile_auto_complete` |
-| `matched_invoices` → `profile_id` join | `invoice_service` |
+| `moneybird.*` → `profile_id` join (doc 27) | `invoice_service` |
 
 **Analytical deliverables:** size the Stage-1 cohort from the renewal calendar; define the "low-exposure" threshold + Stage-1 lift bar; lock the experiment design (arms, randomization unit = profile_id, primary/secondary endpoints, guardrails, MDE/power).
 
@@ -50,7 +50,7 @@ Minimum slice to test the mechanism. Workstreams:
 
 | WS | Deliverable | Repo |
 |---|---|---|
-| **A — Data** | `supplier_exposure_daily` (rollup); cross-region join to `business_development`; revenue join from `matched_invoices` | this repo / `analytics_reporting` |
+| **A — Data** | `supplier_exposure_daily` (rollup); cross-region join to `business_development`; revenue join from `moneybird.mb-2015-2020` (doc 27) | this repo / `analytics_reporting` |
 | **B — Targeting** | segment classifier (non-venue/venue/retail) + low-exposure photographer (±pooled) cohort | this repo |
 | **C — Holdout** | `cohort_assignment` (stable hash) in BQ → synced to Elastic flag; **enforcement check in every emitter** | this repo |
 | **D1 — Boost** | Elastic `retention_boost` on treatment, **free layer only** | Elastic |
@@ -88,7 +88,7 @@ Starts during the Phase-1 *run* (these strengthen targeting/proof and are valuab
   - **Null →** the exposure→retention link wasn't causal at achievable lift; revisit the thesis (don't scale on faith).
 
 **Parallel tracks (independent of the pilot):**
-- **Venue track** — proof/attribution + conversion (uses `gads_api` engine; `matched_invoices` for ROI).
+- **Venue track** — proof/attribution + conversion (uses `gads_api` engine; `moneybird.*` invoices for ROI).
 - **Wrong-model retail** — right-pricing/tiering (rings/suits/catering).
 - **Owned-channel growth** — grow the non-venue exposure pie (newsletter/app/content) to offset organic decline.
 
