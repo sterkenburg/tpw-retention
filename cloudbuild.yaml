@@ -42,3 +42,9 @@ steps:
       - "tpw-ga4-bigquery"
       - "--region"
       - "europe-west4"
+
+# The push-to-deploy trigger runs as a user-specified service account
+# (678140050967-compute@…), which cannot write to the default Cloud Build logs
+# bucket — so logs must go to Cloud Logging explicitly.
+options:
+  logging: CLOUD_LOGGING_ONLY
