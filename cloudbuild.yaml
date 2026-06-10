@@ -28,20 +28,31 @@ steps:
       - "--all-tags"
       - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-retention/app"
 
-  # Point the Cloud Run Job at the freshly built image
+  # Point the Cloud Run Job at the freshly built image.
+  # Wrapped in a retry loop: `jobs update` is a read-modify-write and can fail
+  # with `ABORTED: ... version was specified but current version is ...` if the
+  # job is touched concurrently (e.g. an execution starts mid-build). That's
+  # transient, so we retry with linear backoff. ($COMMIT_SHA is a Cloud Build
+  # substitution; $$-prefixed vars are escaped so they reach bash, not the
+  # substitutor.)
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
-    entrypoint: gcloud
+    entrypoint: bash
     args:
-      - "run"
-      - "jobs"
-      - "update"
-      - "tpw-lifecycle-daily"
-      - "--image"
-      - "europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-retention/app:$COMMIT_SHA"
-      - "--project"
-      - "tpw-ga4-bigquery"
-      - "--region"
-      - "europe-west4"
+      - "-c"
+      - |
+        for attempt in 1 2 3 4 5; do
+          if gcloud run jobs update tpw-lifecycle-daily \
+               --image europe-west4-docker.pkg.dev/tpw-ga4-bigquery/tpw-retention/app:$COMMIT_SHA \
+               --project tpw-ga4-bigquery \
+               --region europe-west4; then
+            echo "jobs update succeeded on attempt $$attempt"
+            exit 0
+          fi
+          echo "jobs update attempt $$attempt failed; retrying in $$((attempt * 5))s..." >&2
+          sleep $$((attempt * 5))
+        done
+        echo "jobs update failed after 5 attempts" >&2
+        exit 1
 
 # The push-to-deploy trigger runs as a user-specified service account
 # (678140050967-compute@…), which cannot write to the default Cloud Build logs
