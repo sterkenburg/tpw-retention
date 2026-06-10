@@ -1,14 +1,14 @@
 # 25 — Spike 4 Answer: Supplier Email + Couple-Newsletter via Bird (YOO-231)
 
 **Status:** Spike answer (closes Definition of Done) · **Date:** 2026-06-09 · **Linear:** [YOO-231](https://linear.app/yoonsterkenburg/issue/YOO-231) (parent YOO-227)
-**Owner:** Retention (tpw-retention) · marketing_flow (Bird)
+**Owner:** Lifecycle (tpw-lifecycle) · marketing_flow (Bird)
 
 Source spec: `docs/strategy/21_phase0_confirmation_spikes.md` §Spike 4. System map: `docs/strategy/19_system_architecture.md`.
 **Definition of done:** email-directive contract + newsletter-injection mechanism + attribution approach.
 
 > **Scope guard:** delivery goes through **`marketing_flow` (Bird.com)** — **NOT**
 > `customer_journey` (the B2C venue flow, kept separate) and **NOT** the deprecated
-> SendGrid prototype (`src/actions/emails.py`, D1–D3). The retention repo is the
+> SendGrid prototype (`src/actions/emails.py`, D1–D3). The lifecycle platform is the
 > **brain**: it publishes directives; Bird/marketing_flow **delivers**.
 
 ---
@@ -26,7 +26,7 @@ Source spec: `docs/strategy/21_phase0_confirmation_spikes.md` §Spike 4. System 
 
 ## 1. Supplier email-directive contract
 
-**What retention publishes** (already implemented, `directives.LEVERS['email']`):
+**What the lifecycle platform publishes** (already implemented, `directives.LEVERS['email']`):
 
 ```
 retention_directives row:
@@ -47,24 +47,24 @@ joined on `profile_id` (memory: supplier-email-source). Note `config/settings.ya
 `sources.supplier_email_*` is still blank — wire it to that table/column so the
 recipient is resolvable (small config change; non-blocking for the contract).
 
-**Template variables** (retention supplies, Bird template renders): supplier name,
+**Template variables** (the lifecycle platform supplies, Bird template renders): supplier name,
 period, exposure metrics (views, impressions, trend vs prior period, category
 benchmark/percentile), masked-lead count + masked snippets, dashboard deep-link
 (UTM-tagged, §3).
 
 **Compliance / rate limits — OPEN for the marketing_flow owner:**
-- Bird template id for `monthly_results` + the **submission API** (how retention
+- Bird template id for `monthly_results` + the **submission API** (how the lifecycle platform
   hands Bird a per-supplier send: API call vs. a BQ table Bird polls vs. a campaign
   audience upload).
 - Unsubscribe/suppression handling (Bird-managed list) and transactional-vs-marketing
   classification (a monthly results email is arguably transactional → different
   consent basis).
-- Send-rate limits and the **dedup window** (retention already carries
+- Send-rate limits and the **dedup window** (the lifecycle platform already carries
   `email.dedup_days.monthly_results: 25` in settings — confirm Bird won't double-send).
 
 ## 2. Couple-newsletter injection mechanism
 
-**What retention publishes** (`directives.LEVERS['newsletter']`):
+**What the lifecycle platform publishes** (`directives.LEVERS['newsletter']`):
 
 ```
 type='newsletter', channel='bird_marketing_flow',
@@ -126,7 +126,7 @@ Bird preserves UTM params through any link-wrapping/click-tracking redirect.
 | Newsletter-injection mechanism | ✅ Defined (§2); assembly support to confirm with owner |
 | Attribution approach | ✅ UTM scheme → GA4 → `tpw_contributed_views` (§3) |
 
-**Spike 4 is answered** from the retention side. The residual items are genuinely
+**Spike 4 is answered** from the lifecycle side. The residual items are genuinely
 **externally-owned** (the Bird/marketing_flow integration surface) and gate dispatch,
 not the contract:
 

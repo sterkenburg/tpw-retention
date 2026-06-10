@@ -1,6 +1,6 @@
-# TPW Retention Platform
+# TPW Lifecycle Platform
 
-Single platform for all supplier retention at The Perfect Wedding.
+Single platform for the full supplier lifecycle at The Perfect Wedding — onboarding, healthy, at-risk, renewal, and lapsed — with retention as one key outcome.
 
 ## What It Does
 
@@ -31,7 +31,7 @@ Daily Pipeline (7 AM Cloud Scheduler)
 ## Project Structure
 
 ```
-tpw-retention/
+tpw-lifecycle/
 ├── config/
 │   ├── settings.yaml          # Thresholds, table names, API keys
 │   └── categories.yaml        # Category benchmarks for projected value
@@ -69,7 +69,7 @@ tpw-retention/
 ### 1. Install
 
 ```bash
-cd tpw-retention
+cd tpw-lifecycle
 pip install -e ".[dev]"
 ```
 
@@ -113,16 +113,16 @@ gcloud builds submit --config cloudbuild.yaml
 ```
 
 This deploys two services:
-- `tpw-retention-api` — FastAPI for webhooks and supplier endpoints
-- `tpw-retention-dashboard` — Streamlit for sales team
+- `tpw-lifecycle-api` — FastAPI for webhooks and supplier endpoints
+- `tpw-lifecycle-dashboard` — Streamlit for sales team
 
 ## Cloud Scheduler
 
 ```bash
 # Daily pipeline at 7 AM
-gcloud scheduler jobs create http tpw-daily-retention \
+gcloud scheduler jobs create http tpw-daily-lifecycle \
     --schedule="0 7 * * *" \
-    --uri="https://tpw-retention-api-xxx.run.app/jobs/daily" \
+    --uri="https://tpw-lifecycle-api-xxx.run.app/jobs/daily" \
     --http-method=POST \
     --time-zone="Europe/Amsterdam"
 ```

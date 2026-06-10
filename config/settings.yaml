@@ -1,4 +1,4 @@
-# TPW Retention Platform — Configuration
+# TPW Lifecycle Platform — Configuration
 # Extracted from existing churn_prediction project
 # Override with environment variables: TPW__SECTION__KEY=value
 
@@ -49,7 +49,8 @@ sources:
   raw_ga4_dataset: "tpw-ga4-bigquery.analytics_251061328"
   raw_ga4_events: "events_*"
 
-# Retention tables (read/write — created by this platform)
+# Lifecycle platform tables (read/write — created by this platform). Table/dataset
+# names still use the `retention*` prefix pending a rename migration.
 tables:
   supplier_stats: "supplier_stats_daily"
   supplier_exposure: "supplier_exposure_daily"   # EU (retention)

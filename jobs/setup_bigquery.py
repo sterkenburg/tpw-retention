@@ -1,4 +1,4 @@
-"""One-time setup: Create BigQuery tables for the retention platform.
+"""One-time setup: Create BigQuery tables for the lifecycle platform.
 
 Run this after deploying to create the dataset and tables.
 """

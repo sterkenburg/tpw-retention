@@ -1,14 +1,16 @@
-# TPW B2B Retention Strategy — Document Index
+# TPW B2B Supplier Lifecycle Strategy — Document Index
 
 ## What This Is
-A comprehensive retention strategy for The Perfect Wedding (theperfectwedding.nl) to reduce supplier churn from 25% to <12% while cutting retention-related sales headcount by 40-50%.
+A supplier **lifecycle** strategy for The Perfect Wedding (theperfectwedding.nl). The system manages each supplier across the full lifecycle — **onboarding → healthy → at_risk → renewal_window → lapsed** — with **retention as one phase/outcome within it**, not the whole program. The headline goal of that retention outcome: reduce supplier churn from 25% to <12% while cutting retention-related sales headcount by 40-50%. (The journey layer in `src/signals/journey.py` already implements these stages.)
 
 ## Documents
 
 > **Reading order:** docs **17–28 (June)** are the current, evidence-led strategy and
-> execution. Docs **01–16 (May 22)** are the pre-evidence exploration — several are
-> superseded (each carries a banner pointing to its replacement) but retained for
-> history and reusable design detail (email copy, flow designs, market research).
+> execution — and the point where the framing widens from retention-only to the full
+> supplier **lifecycle** (retention being one phase within it). Docs **01–16 (May 22)**
+> are the pre-evidence, retention-first exploration — several are superseded (each
+> carries a banner pointing to its replacement) but retained for history and reusable
+> design detail (email copy, flow designs, market research).
 
 | # | File | What It Covers |
 |---|------|----------------|
@@ -30,7 +32,7 @@ A comprehensive retention strategy for The Perfect Wedding (theperfectwedding.nl
 | 16 | [16_retention_hooks_brainstorm.md](16_retention_hooks_brainstorm.md) | Brainstorm: non-monetary retention hooks — primary focus: Ad Boost Pool for solo categories |
 | 17 | [17_refined_retention_strategy.md](17_refined_retention_strategy.md) | **Evidence-led refined strategy** — supersedes assumptions in 01–16; churn driven by exposure/engagement/onboarding, not leads or price |
 | 18 | [18_value_add_bundle_and_pilot.md](18_value_add_bundle_and_pilot.md) | Value-add bundle (exposure redistribution + dashboard proof) + two-stage holdout pilot design |
-| 19 | [19_system_architecture.md](19_system_architecture.md) | System architecture — retention decisioning engine integrating Elastic, Bird.com (`marketing_flow`), GA4, supplier dashboard; holdout enforcement; Stage-1 build order *(customer_journey = B2C venue flow, out of scope)* |
+| 19 | [19_system_architecture.md](19_system_architecture.md) | System architecture — lifecycle decisioning engine integrating Elastic, Bird.com (`marketing_flow`), GA4, supplier dashboard; holdout enforcement; Stage-1 build order *(customer_journey = B2C venue flow, out of scope)* |
 | 20 | [20_phased_implementation_plan.md](20_phased_implementation_plan.md) | Phased execution roadmap (Phase 0 confirmations → Stage-1 pilot → model/dashboard → Stage-2 readout & scale) with decision gates G0–G3 |
 | 21 | [21_phase0_confirmation_spikes.md](21_phase0_confirmation_spikes.md) | Seven ready-to-create confirmation spikes (Elastic boost, exposure rollup, model features, serving/Bird, newsletter, scraper, invoices) to clear gate G0 |
 | 22 | [22_elastic_boost_interface_contract.md](22_elastic_boost_interface_contract.md) | Interface contract for YOO-228 — the `retention_boost` published view, premium-isolated `function_score`, holdout/kill-switch guarantees, guardrail metrics (hand to TPW Elastic team) |
@@ -39,7 +41,7 @@ A comprehensive retention strategy for The Perfect Wedding (theperfectwedding.nl
 | 25 | [25_spike4_bird_email_newsletter_answer.md](25_spike4_bird_email_newsletter_answer.md) | **G0 spike answer (YOO-231)** — supplier email + couple-newsletter via Bird; UTM attribution |
 | 26 | [26_spike5_scraper_cohort_trigger_answer.md](26_spike5_scraper_cohort_trigger_answer.md) | **G0 spike answer (YOO-232)** — scraper cohort trigger + opt-in model |
 | 27 | [27_spike6_invoice_profile_join_answer.md](27_spike6_invoice_profile_join_answer.md) | **G0 spike answer (YOO-233)** — Moneybird invoice → `profile_id` join (98.6% coverage) |
-| 28 | [28_retention_flow_and_levers.md](28_retention_flow_and_levers.md) | **Full retention flow + lever catalog** — segmentation into populations; 6 built levers (incl. onboarding + winback) + 4 proposed |
+| 28 | [28_retention_flow_and_levers.md](28_retention_flow_and_levers.md) | **Full lifecycle flow + lever catalog** — segmentation into lifecycle populations/stages; 6 built levers (incl. onboarding + winback) + 4 proposed |
 
 ## The Core Insight
 
@@ -49,7 +51,7 @@ The solution is not more account manager visits. It's:
 1. **Prove value** (dashboard, monthly reports, lead notifications)
 2. **Automate scale** (triggered flows replace manual check-ins)
 3. **Segment ruthlessly** (field sales only for accounts where it makes economic sense)
-4. **Intervene early** (health scores predict churn before the cancellation click)
+4. **Intervene at the right lifecycle stage** (onboard well, keep healthy suppliers healthy, and let health scores predict churn before the cancellation click)
 
 ## Quick Start (This Week)
 

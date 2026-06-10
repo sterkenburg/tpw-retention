@@ -250,7 +250,7 @@ Call script tips:
         "due_date": (datetime.now() + timedelta(days=1)).isoformat(),
         "priority": "high",
         "tags": ["retention", "churn-risk", row['category']],
-        "external_id": f"tpw-retention-{row['profile_id']}-{datetime.now().strftime('%Y%m%d')}"
+        "external_id": f"tpw-lifecycle-{row['profile_id']}-{datetime.now().strftime('%Y%m%d')}"
     }
     
     # Example with generic CRM API

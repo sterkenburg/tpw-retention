@@ -45,7 +45,7 @@ Recommended: Call within 24h. Offer profile optimization or annual discount.
         "due_date": (datetime.now() + timedelta(days=1)).isoformat(),
         "priority": "high",
         "tags": ["retention", "churn-risk", category],
-        "external_id": f"tpw-retention-{profile_id}-{datetime.now().strftime('%Y%m%d')}",
+        "external_id": f"tpw-lifecycle-{profile_id}-{datetime.now().strftime('%Y%m%d')}",
     }
 
     try:

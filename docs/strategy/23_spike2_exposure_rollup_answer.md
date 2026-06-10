@@ -1,7 +1,7 @@
 # 23 — Spike 2 Answer: Exposure Rollup + Dashboard Feed (YOO-229)
 
 **Status:** Spike answer (closes Definition of Done) · **Date:** 2026-06-09 · **Linear:** [YOO-229](https://linear.app/yoonsterkenburg/issue/YOO-229) (parent YOO-227)
-**Owner:** Retention (tpw-retention) · analytics_reporting + BigQuery
+**Owner:** Lifecycle (tpw-lifecycle) · analytics_reporting + BigQuery
 
 This closes Spike 2. Source spec: `docs/strategy/21_phase0_confirmation_spikes.md` §Spike 2.
 **Definition of done:** reuse-vs-build decision + `supplier_exposure_daily`/`_monthly` schemas + schedule.
@@ -12,7 +12,7 @@ This closes Spike 2. Source spec: `docs/strategy/21_phase0_confirmation_spikes.m
 
 | Question | Answer |
 |---|---|
-| Reuse or build the rollup? | **Reuse** `ga4_dataform_reporting.monthly_profile_stats` via a thin retention job. Already built as WS-A. |
+| Reuse or build the rollup? | **Reuse** `ga4_dataform_reporting.monthly_profile_stats` via a thin lifecycle job. Already built as WS-A. |
 | Where does **rank** come from? | **No Elastic rank snapshot exists in BQ today.** Ship a **category-percentile proxy** now; defer true Elastic rank until Spike 1 (YOO-228) publishes a daily rank snapshot. Rank is **not** Stage-1-blocking. |
 | Cross-region handling? | **Resolved by the 2026-06-05 US→EU migration.** Exposure rollup is now a pure server-side EU `INSERT…SELECT`. `business_development` (europe-west3) is still joined in **pandas** in the targeting step (WS-B). |
 | Does the dashboard read a BQ reporting table? | **Confirmed.** `src/dashboard/app.py` queries `retention.supplier_stats_daily` directly. `supplier_exposure_monthly` is just a sibling table — **no serving layer**. |
@@ -28,15 +28,15 @@ This closes Spike 2. Source spec: `docs/strategy/21_phase0_confirmation_spikes.m
 `event_name`** holds the value (the `view_item` row populates `view_item`, etc.).
 
 **Decision:** do **not** rebuild aggregation from raw GA4 events, and do **not**
-mutate the reporting table. A **thin retention job** (`src/data/exposure.py`,
+mutate the reporting table. A **thin lifecycle job** (`src/data/exposure.py`,
 driven by `jobs/build_exposure_daily.py`) collapses the per-event skeleton into one
 exposure row per `(profile_id, date)` via a server-side `INSERT…SELECT`. The
 ~388M-row source is never pulled to pandas.
 
-**Freshness — open confirm item:** the retention job is idempotent per date and
+**Freshness — open confirm item:** the lifecycle job is idempotent per date and
 runs incrementally (last 3 days), so it self-heals once upstream lands. The one
 thing to confirm with the analytics_reporting owner is the **Dataform refresh
-cadence of `monthly_profile_stats`** (daily? what hour?) so the retention job is
+cadence of `monthly_profile_stats`** (daily? what hour?) so the lifecycle job is
 scheduled to run *after* it. → tracked as a follow-up below.
 
 ## 2. `supplier_exposure_daily` schema (built — WS-A)

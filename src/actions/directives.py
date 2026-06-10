@@ -1,6 +1,6 @@
-"""WS-D — directive generation (the decisioning brain's output).
+"""WS-D — directive generation (the lifecycle decisioning core's output).
 
-This repo is the retention **brain**: it decides WHAT each treatment supplier
+This repo is the lifecycle **brain**: it decides WHAT each treatment supplier
 should receive, writes those decisions to `retention_directives` (the single
 source of truth), and leaves DELIVERY to the systems that own each surface
 (Elastic, Bird/marketing_flow, profile_auto_complete). See docs/strategy/19.

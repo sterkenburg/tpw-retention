@@ -1,4 +1,4 @@
-"""Daily retention pipeline. THE main job.
+"""Daily lifecycle pipeline. THE main job.
 
 Runs at 7 AM via Cloud Scheduler.
 1. Load data
@@ -31,7 +31,7 @@ from signals import churn_scorer, engagement
 
 def run():
     print(f"\n{'=' * 60}")
-    print(f"TPW Retention Pipeline — {datetime.now().isoformat()}")
+    print(f"TPW Lifecycle Pipeline — {datetime.now().isoformat()}")
     print(f"{'=' * 60}\n")
 
     # ------------------------------------------------------------------

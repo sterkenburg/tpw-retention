@@ -1,13 +1,13 @@
 # 22 — Elastic `retention_boost` Interface Contract (YOO-228)
 
 **Status:** Draft for the TPW Elastic team · **Date:** 2026-06-05 · **Linear:** [YOO-228](https://linear.app/yoonsterkenburg/issue/YOO-228) (parent YOO-227)
-**Owner of this doc:** Retention (tpw-retention) · **Owner of the Elastic side:** TPW ranking team
+**Owner of this doc:** Lifecycle (tpw-lifecycle) · **Owner of the Elastic side:** TPW ranking team
 
 This is the integration contract for the **core retention lever**: a per-supplier
 placement boost applied **only in the free/organic ranking layer**, never to paid
-premium spots. It defines the **stable surface** the retention platform publishes,
+premium spots. It defines the **stable surface** the lifecycle platform publishes,
 exactly what the ranker must read, and the guarantees each side commits to — so
-the Elastic side can be built without depending on retention internals.
+the Elastic side can be built without depending on lifecycle-platform internals.
 
 ---
 
@@ -29,7 +29,7 @@ the Elastic side can be built without depending on retention internals.
 
 ## 2. Division of responsibility
 
-| Retention platform (this repo) owns | Elastic / ranking team owns |
+| Lifecycle platform (this repo) owns | Elastic / ranking team owns |
 |---|---|
 | Who is treatment vs control (holdout) | How supplier ranking is scored today |
 | The published boost flag + magnitude + window | How **premium** is implemented + kept isolated |
@@ -41,7 +41,7 @@ the Elastic side can be built without depending on retention internals.
 
 ## 3. The published surface (the contract)
 
-The retention platform publishes **one stable BigQuery view** in the (US) `retention`
+The lifecycle platform publishes **one stable BigQuery view** in the (US) `retention`
 dataset. This is the *only* object the Elastic side reads — internal tables
 (`retention_directives`, `cohort_assignment`) may change; this view will not, except
 by versioned change agreed here.
@@ -63,7 +63,7 @@ by versioned change agreed here.
 - **Absence of a row, or `retention_boost = FALSE` ⇒ no boost.** The ranker must
   default to today's behaviour for any supplier not TRUE here.
 - **Control + every non-enrolled supplier is guaranteed absent-or-FALSE.** The
-  retention side asserts this on every publish (holdout enforcement); the ranker
+  lifecycle side asserts this on every publish (holdout enforcement); the ranker
   needs no knowledge of arms beyond honouring the boolean.
 - `boost_weight` is the **only** tuning input the ranker takes from us. Bounds in §5.
 - The view reflects the **master kill-switch** (§6): when disabled, every row is
@@ -137,7 +137,7 @@ query path only**. Premium query path is untouched.
 
 ## 6. Kill-switch (two independent levels)
 
-1. **Data-surface master switch (retention side):** a single control flag flips
+1. **Data-surface master switch (lifecycle side):** a single control flag flips
    every `retention_boost` to `FALSE` within one refresh cycle. Use for "turn the
    experiment off" / guardrail breach.
 2. **Query-level feature flag (Elastic side):** an instant, deploy-free toggle that
@@ -190,9 +190,9 @@ magnitude + holdout-aware + kill-switch) + guardrail metrics + effort estimate.
 
 ---
 
-## 9. Reference: published-view DDL (retention side)
+## 9. Reference: published-view DDL (lifecycle side)
 
-How the retention platform derives the contract view from its internal tables. The
+How the lifecycle platform derives the contract view from its internal tables. The
 boolean is TRUE **only** when a supplier is treatment-arm AND has an active boost
 directive AND the channel is enabled — so the holdout and premium guarantees are
 structural, not conventions.
@@ -222,14 +222,14 @@ WHERE d.type = 'boost';
 > Today every boost directive is `status = 'gated'` (Elastic channel disabled until
 > this spike closes), so the view currently returns **0 active boosts** — the correct
 > pre-launch state. Flipping `directives.elastic_enabled = true` (config) after the
-> spike lands makes treatment rows go TRUE. The retention side will materialize this
+> spike lands makes treatment rows go TRUE. The lifecycle side will materialize this
 > view as part of wiring the dispatch adapter.
 
 ---
 
 ## 10. Summary of guarantees
 
-**Retention platform commits:**
+**Lifecycle platform commits:**
 - One stable view; control + non-enrolled suppliers **never** `retention_boost=TRUE`.
 - `layer` always `"free"`; a single tuning knob; a master kill-switch.
 

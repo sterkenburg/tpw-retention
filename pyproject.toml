@@ -1,7 +1,7 @@
 [project]
-name = "tpw-retention"
+name = "tpw-lifecycle"
 version = "0.1.0"
-description = "The Perfect Wedding — Supplier Retention Platform"
+description = "The Perfect Wedding — Supplier Lifecycle Platform"
 requires-python = ">=3.11"
 dependencies = [
     "pandas>=2.0",
