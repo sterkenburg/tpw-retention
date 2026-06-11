@@ -152,6 +152,21 @@ profile would have appeared in Y searches" — i.e. *foregone exposure*, the sam
 honest currency as the rest of the strategy. Pair with right-pricing (`offer`, lever
 #7) for wrong-model/low-exposure churners once Moneybird ARR is available.
 
+> **✔ Built 2026-06-11** — `suppliers.get_ended_terms()` + `get_lapsed()` (the
+> ended-terms feed), `analytics/outcomes.py` + `jobs/build_outcomes.py`, and lapsed
+> rows in `supplier_targeting` (`renewal_status='lapsed'`, ≤6 months, 30-day grace
+> boundary so the active/lapsed feeds are disjoint).
+>
+> Live readout: journey `lapsed` stage = **138** (was structurally 0); winback
+> eligibility returns the same 138 — **enrolment deliberately deferred** until the
+> winback sequence is designed (gated enrolees would age out of the ≤6-month
+> window). `outcomes`: **3,223 term rows / 1,925 suppliers** (24 months, 34
+> pending). **Labels validate against doc 17:** decided churn 23.8% ≈ the known
+> ~24–25%; first-term churn 39.3% ≈ the 38% cliff; venue 16.6% ≈ the 15% known
+> low. Established-supplier churn reads 20.3% vs doc 17's 12% — different window
+> (last 24 months vs the ≥2023 cohort), worth a look during the recall backtest.
+> Post-enrolment outcome rows: 0 (correct pre-launch).
+
 ---
 
 ## 3. Fix the cross-experiment collision (before onboarding enrols)
@@ -291,7 +306,7 @@ Ordered by dependency and value; (1)–(3) are this-repo and unblocked **today**
 | # | Build item | Phase served | Owner / blocker | Effort |
 |---|---|---|---|---|
 | 1 | **First-term exclusion** in stage1 eligibility (§3) — **✔ applied 2026-06-11** (code + cohort cleanup + directives rebuild); **✔ power re-checked** — Stage-2 needs a stratified program-level readout + longer/wider enrollment (§3) | retain + onboard | this repo — none | XS |
-| 2 | **Ended-term feed** → `outcomes` + lapsed targeting rows (§2.5) | recover + measurement | this repo — none (interim `business_development`) | S–M |
+| 2 | **Ended-term feed** → `outcomes` + lapsed targeting rows (§2.5) — **✔ built 2026-06-11** (lapsed=138 live, outcomes=3,223 labels; winback enrolment deferred to sequence launch) | recover + measurement | this repo — none (interim `business_development`) | S–M |
 | 3 | **At-risk union** with live model scores (§2.3) + recall backtest once (2) lands | retain | this repo — read access to `churn_prediction` outputs | S |
 | 4 | **Elastic spike YOO-228** → boost build (doc 22) | retain | **Elastic team — open, P0 critical path** | M |
 | 5 | **Bird contract items** (template id, submission API, newsletter block; doc 25) | retain + onboard | marketing_flow owner | S–M |

@@ -107,7 +107,7 @@ LEVERS = {
     "winback": {
         "channel": "bird_marketing_flow",
         "enable_flag": "winback_enabled",
-        "spike": "winback cohort + churned-supplier source",
+        "spike": "winback sequence design + Bird (lapsed feed ready, doc 29 §2.5)",
         "experiments": ["winback"],
         "params": {"campaign": "reactivation", "max_lapsed_months": 6},
     },
