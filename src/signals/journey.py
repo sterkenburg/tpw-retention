@@ -6,14 +6,17 @@ supplier is placed in a single lifecycle STAGE derived from columns already in
 fire there — the WHEN the directive layer lacked (docs/strategy/28 §1, §4).
 
 Stages (priority order — first match wins):
-  lapsed          renewal_status not retained (churned)   → winback
-  onboarding      active, first_term (first paid term)    → onboarding
-  renewal_window  active, 0 ≤ days_until_renewal ≤ N      → save: boost + email
-  at_risk         active, at_risk_tier in {P1, P2}        → full stage-1 exposure set
-  healthy         retained / low-risk (incl. renewed)     → monitor (no directive)
+  lapsed          renewal_status not retained (churned)     → winback
+  onboarding      active, first_term (first paid term)      → onboarding
+  renewal_window  active/will_churn, 0 ≤ days_until_renewal ≤ N → save: boost + email
+  at_risk         active/will_churn, at_risk_tier in {P1,P2}  → full stage-1 exposure set
+  healthy         retained / low-risk (incl. renewed)       → monitor (no directive)
 
-`already_renewed` = retained for a *future* term, so it maps to `healthy` (monitor),
-NOT `lapsed` — only genuinely churned statuses are the winback pool (targeting.RETAINED_STATUSES).
+`already_renewed` = retained for a *future* term → `healthy` (monitor). `will_churn`
+= paid term running with a scheduled Gratis downgrade → the SAVE population: it
+routes to renewal_window/at_risk (never onboarding/healthy/lapsed — they only become
+winback after the term actually ends). Only genuinely churned statuses are the
+winback pool (targeting.RETAINED_STATUSES).
 
 Read-only: a derived view over targeting, not a written table (yet). The stage→lever
 map references `directives.LEVERS` so gating/params stay single-source. A persisted
@@ -57,9 +60,13 @@ def stage(row) -> str:
     status = str(row.get("renewal_status", "active"))
     if status not in RETAINED_STATUSES:   # churned/unknown → winback pool
         return "lapsed"
-    if status != "active":                # already_renewed → retained for a future term
+    if status == "already_renewed":       # retained for a future term
         return "healthy"
-    if bool(row.get("first_term", False)):
+    # 'active' and 'will_churn' (paid term running, Gratis downgrade already
+    # scheduled) flow through the live stages: will_churn is the SAVE population
+    # — renewal_window or at_risk (its +0.40 score guarantees ≥ P2), never a
+    # welcome sequence, even for first-termers.
+    if bool(row.get("first_term", False)) and status == "active":
         return "onboarding"
     days = row.get("days_until_renewal")
     if days is not None and pd.notna(days) and 0 <= days <= RENEWAL_WINDOW_DAYS:

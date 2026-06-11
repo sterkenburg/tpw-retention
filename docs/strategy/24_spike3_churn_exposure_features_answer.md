@@ -127,7 +127,17 @@ not model work.
 
 1. **Wire the union:** join `supplier_targeting.at_risk_tier` with the live
    predictions table and take the OR for the final at-risk list.
+   **✔ Done 2026-06-11** (doc 29 §2.3 note): `data/predictions.py` + blend in
+   `targeting.py`; flagged ⇒ ≥P2, Critical ⇒ P1. Wiring exposed and fixed a
+   `get_current()` coverage bug that hid the scheduled-cancellation (`will_churn`)
+   population — 113 of the model's 127 flags were invisible to targeting.
 2. **Backtest the recall lift** against `churn_prediction` labelled outcomes (§4) —
    needs read access to that project.
+   **✔/△ Done for the overlay side 2026-06-11**: on 3,109 decided terms from the
+   `outcomes` table (churn base 23.6%), the overlay at P1+P2 recalls **82.7%** of
+   churners (precision 27.2%); P1 alone 34.4% / 39.1%. The §4 method as written is
+   **impossible retroactively** — `daily_churn_predictions_segmented` keeps only the
+   latest day, no history. Live flags are now snapshotted into `supplier_targeting`
+   daily, so the union's lift becomes measurable prospectively against `outcomes`.
 3. **Instrument supplier-dashboard logins** to BQ so dashboard-engagement recency
    becomes a real feature (owner: dashboard app) — deferred beyond Stage-1.

@@ -50,9 +50,10 @@ def _email_sql() -> tuple[str, str]:
 def get_current() -> pd.DataFrame:
     """Get all currently active paid suppliers with contact info.
 
-    Excludes suppliers whose latest plan is Gratis (churned).
-    Flags suppliers with a future Gratis plan as 'will_churn'.
-    Flags suppliers with a future paid plan as 'already_renewed'.
+    The current plan is the latest PAID plan (a scheduled trailing Gratis row
+    never shadows a running paid term). The earliest future plan sets the
+    renewal status: Gratis ⇒ 'will_churn' (cancellation already scheduled),
+    paid ⇒ 'already_renewed', none ⇒ 'active'.
 
     Includes an `email` column if a supplier email source is configured
     (sources.supplier_email_table / supplier_email_column); otherwise `email`
@@ -63,26 +64,37 @@ def get_current() -> pd.DataFrame:
     email_select, email_join = _email_sql()
 
     sql = f"""
-    WITH ordered_plans AS (
+    WITH paid_plans AS (
+        -- Rank over PAID plans only: many suppliers carry a scheduled trailing
+        -- 'Gratis' row (plan_end 2100-01-01) that starts when the paid term
+        -- ends. Ranking over all plans let that row shadow the running paid
+        -- plan and silently drop the supplier — exactly the scheduled-churn
+        -- population the at-risk system most needs to see (doc 29 §2.3 note).
         SELECT
             *,
-            ROW_NUMBER() OVER (PARTITION BY profile_id ORDER BY plan_end DESC) AS rn_end,
-            ROW_NUMBER() OVER (PARTITION BY profile_id ORDER BY plan_start DESC) AS rn_start
+            ROW_NUMBER() OVER (PARTITION BY profile_id ORDER BY plan_end DESC) AS rn_end
         FROM `{_BUSINESS_TABLE}`
         WHERE profile_id IS NOT NULL
+          AND plan_name != 'Gratis'
     ),
     latest_plan AS (
-        SELECT * FROM ordered_plans WHERE rn_end = 1
+        SELECT * FROM paid_plans WHERE rn_end = 1
     ),
     next_plan AS (
-        SELECT
-            profile_id,
-            plan_name AS next_plan_name,
-            plan_start AS next_plan_start,
-            plan_end AS next_plan_end
-        FROM ordered_plans
-        WHERE plan_start > CURRENT_DATE()
-          AND rn_start = 1
+        -- The EARLIEST future plan (any kind) decides the renewal status: a
+        -- scheduled Gratis ⇒ will_churn, a booked paid renewal ⇒ already_renewed.
+        SELECT * FROM (
+            SELECT
+                profile_id,
+                plan_name AS next_plan_name,
+                plan_start AS next_plan_start,
+                plan_end AS next_plan_end,
+                ROW_NUMBER() OVER (PARTITION BY profile_id ORDER BY plan_start) AS rn
+            FROM `{_BUSINESS_TABLE}`
+            WHERE profile_id IS NOT NULL
+              AND plan_start > CURRENT_DATE()
+        )
+        WHERE rn = 1
     )
     SELECT
         b.profile_id,
@@ -112,8 +124,7 @@ def get_current() -> pd.DataFrame:
         ON b.profile_id = p.profile_id
     LEFT JOIN next_plan np
         ON b.profile_id = np.profile_id{email_join}
-    WHERE b.plan_name != 'Gratis'
-      AND b.plan_end >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+    WHERE b.plan_end >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
     """
     df = query(sql)
     for col in ["plan_start", "plan_end"]:

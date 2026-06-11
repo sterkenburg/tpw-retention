@@ -134,6 +134,12 @@ def _eligible(experiment_id: str) -> pd.DataFrame:
             mask &= df["days_until_renewal"].between(0, window)
     elif mode == "first_term":
         mask = df["first_term"].fillna(False).astype(bool)
+        # Welcome material is for suppliers still deciding: a first-termer with a
+        # scheduled downgrade (will_churn) belongs to the save motion
+        # (renewal_window/at_risk via journey.stage), and one who already renewed
+        # has cleared the year-1 cliff — neither enrols in onboarding.
+        if "renewal_status" in df.columns:
+            mask &= df["renewal_status"] == "active"
         if spec.get("categories"):
             mask &= df["category"].isin(spec["categories"])
     elif mode == "churned":
