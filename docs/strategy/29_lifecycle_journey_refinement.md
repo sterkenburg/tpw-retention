@@ -112,6 +112,41 @@ Two low-effort improvements from the spike answers, both this-repo work:
 2. **Run the recall backtest** (doc 24 §4) once the labelled outcomes land via the
    ended-term feed (§2.5) — it is measurement, not model work.
 
+> **✔ Built 2026-06-11 — union wired, and it caught a coverage bug.**
+>
+> **The union** (`data/predictions.py` + blend in `targeting.py`): `at_risk_tier`
+> is now the OR of the rule overlay and the live model's own flags (flagged ⇒ ≥P2,
+> Critical ⇒ P1; rule tier never downgraded). `at_risk_tier_rule`,
+> `live_churn_probability`, `live_model_flag` are persisted per snapshot — which
+> also creates the prediction **history** the external table doesn't keep (it holds
+> one day only), making the union's recall lift measurable prospectively against
+> `outcomes`. Degrades to overlay-only if the external pipeline is down.
+>
+> **The coverage bug:** wiring exposed that only 14 of the live model's 127
+> flagged suppliers were visible to targeting. Cause: ~137 active paid suppliers
+> carry a scheduled trailing `Gratis` row (`plan_end` 2100-01-01) that shadowed
+> their running paid term in `get_current()`'s latest-plan ranking — silently
+> dropping the **scheduled-cancellation population** (the literal doc-17 failure
+> mode) from the entire system. Fixed: current plan ranks over paid plans only;
+> earliest future plan sets `renewal_status` (`will_churn` = save population, now
+> in `RETAINED_STATUSES`, +0.40 at-risk, routed to renewal_window/at_risk — never
+> onboarding/healthy/winback). Live readout after fix: 1,716 targeting rows
+> (+137), all 127 live flags visible, 114 `will_churn` all P1/P2; journey:
+> renewal_window 60→118, at_risk 188→244. `churn_scorer`'s existing `will_churn`
+> branches finally receive the value they were written for. Onboarding eligibility
+> tightened alongside (`renewal_status == 'active'`): a first-termer with a
+> scheduled downgrade gets the save motion, not a welcome sequence — verified
+> across all three experiment pools (129 / 222 / 138, no status leakage).
+>
+> **Backtest (overlay side; live side has no history):** on 3,109 decided terms
+> (≥2024-07, churn base 23.6%), scored at renewal−90d: P1 = 34.4% recall / 39.1%
+> precision; **P1+P2 = 82.7% recall** / 27.2% precision (vs the live model's
+> 27.6% recall) — confirming doc 24's directional claim, with the precision cost
+> now quantified. Implication: the union (P2+) is the right targeting net for
+> **cheap automated levers**; reserve P1 + `live_critical` for **expensive human
+> touches** (`alert`/`offer`). The union's own lift gets measured prospectively
+> as targeting snapshots accumulate beside `outcomes`.
+
 ### 2.4 Renewal window (63 — the decision point, still unarmed)
 
 Doc 17's sharpest line — *sales calls the supplier with no ammunition* — describes
@@ -307,7 +342,7 @@ Ordered by dependency and value; (1)–(3) are this-repo and unblocked **today**
 |---|---|---|---|---|
 | 1 | **First-term exclusion** in stage1 eligibility (§3) — **✔ applied 2026-06-11** (code + cohort cleanup + directives rebuild); **✔ power re-checked** — Stage-2 needs a stratified program-level readout + longer/wider enrollment (§3) | retain + onboard | this repo — none | XS |
 | 2 | **Ended-term feed** → `outcomes` + lapsed targeting rows (§2.5) — **✔ built 2026-06-11** (lapsed=138 live, outcomes=3,223 labels; winback enrolment deferred to sequence launch) | recover + measurement | this repo — none (interim `business_development`) | S–M |
-| 3 | **At-risk union** with live model scores (§2.3) + recall backtest once (2) lands | retain | this repo — read access to `churn_prediction` outputs | S |
+| 3 | **At-risk union** with live model scores (§2.3) + recall backtest once (2) lands — **✔ built 2026-06-11** (union live; overlay backtested: P1+P2 recall 82.7% vs live 27.6%; fixed the will_churn coverage bug it exposed) | retain | this repo — read access to `churn_prediction` outputs | S |
 | 4 | **Elastic spike YOO-228** → boost build (doc 22) | retain | **Elastic team — open, P0 critical path** | M |
 | 5 | **Bird contract items** (template id, submission API, newsletter block; doc 25) | retain + onboard | marketing_flow owner | S–M |
 | 6 | **Onboarding sequence design** (§2.1) + scraper opt-in decision (doc 26 §2) | onboard | this repo + product | S–M |

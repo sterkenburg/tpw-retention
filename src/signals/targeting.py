@@ -10,8 +10,13 @@ with the europe-west3 business data (`business_development` via
   - tenure / first_term, term_months, days_until_renewal
   - at_risk_score      rule-based on the VALIDATED drivers (exposure level+trend,
                        first-term, term length, recency) — a signal that triggers
-                       actions, not an ML product (the live churn model gets these
-                       features via Spike 3 / YOO-230)
+                       actions, not an ML product
+  - at_risk_tier       the UNION of the rule overlay and the live churn model's
+                       flags (doc 24 §3: blend, don't retrain — the model misses
+                       low-exposure churners, the overlay misses what the model's
+                       business/call features catch). `at_risk_tier_rule` keeps
+                       the overlay-only tier; `live_churn_probability` /
+                       `live_model_flag` record the model's view per snapshot
   - bundle_eligible    non-venue lead-driven + low-exposure (the pilot pool)
 
 Rows cover active paid suppliers (suppliers.get_current) PLUS the recently-lapsed
@@ -30,7 +35,7 @@ import os
 import pandas as pd
 import yaml
 
-from data import client, suppliers
+from data import client, predictions, suppliers
 
 _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "config", "settings.yaml")
 with open(_CONFIG_PATH) as _f:
@@ -45,11 +50,14 @@ _EXPOSURE_TABLE = (
 LOW_EXPOSURE_VIEWS_YR = 330
 
 # renewal_status values that mean the supplier is still in a paid relationship —
-# 'active' (current term) or 'already_renewed' (a future paid term exists). Anything
-# else is genuinely lapsed (the winback pool). Defined as an allowlist so unknown
-# future churned markers default to lapsed, not retained. Lapsed rows come from
+# 'active' (current term), 'already_renewed' (a future paid term exists), or
+# 'will_churn' (current paid term running but a Gratis downgrade is already
+# scheduled — a SAVE population, not winback: they only become lapsed after the
+# term actually ends, via the ended-terms feed). Anything else is genuinely
+# lapsed (the winback pool). Defined as an allowlist so unknown future churned
+# markers default to lapsed, not retained. Lapsed rows come from
 # suppliers.get_lapsed() (renewal_status='lapsed', ended-terms feed — doc 29 §2.5).
-RETAINED_STATUSES = {"active", "already_renewed"}
+RETAINED_STATUSES = {"active", "already_renewed", "will_churn"}
 
 # How far back a lapsed supplier stays in targeting (months since their last paid
 # term ended). Matches directives.LEVERS['winback'] params.max_lapsed_months —
@@ -126,6 +134,10 @@ def _at_risk_score(row) -> float:
     # No recent exposure at all
     if row["days_since_last_view"] is None or row["days_since_last_view"] > 30:
         score += 0.15
+    # Downgrade to Gratis already scheduled — the supplier has decided; the
+    # save conversation is now, not at a predicted-risk threshold
+    if row.get("renewal_status") == "will_churn":
+        score += 0.40
     return max(0.0, min(1.0, score))
 
 
@@ -137,6 +149,24 @@ def _tier(score: float) -> str:
     if score >= 0.30:
         return "P3"
     return "P4"
+
+
+_TIER_RANK = {"P1": 1, "P2": 2, "P3": 3, "P4": 4}
+
+
+def _blend_tier(rule_tier: str, live_flag: bool, live_critical: bool) -> str:
+    """Union of the rule overlay and the live churn model (doc 24 §3: OR-blend).
+
+    The live model is high-precision / ~27% recall and lacks exposure features;
+    the overlay IS those features. The union maximises recall: a supplier is at
+    least P2 when the live model flags churn at its own calibrated threshold,
+    at least P1 when it says Critical (probability ≥ ~0.80). The rule tier is
+    never downgraded.
+    """
+    live_tier = "P1" if live_critical else ("P2" if live_flag else None)
+    if live_tier and _TIER_RANK[live_tier] < _TIER_RANK[rule_tier]:
+        return live_tier
+    return rule_tier
 
 
 def calculate() -> pd.DataFrame:
@@ -172,7 +202,29 @@ def calculate() -> pd.DataFrame:
     df["low_exposure"] = df["views_365d"] < LOW_EXPOSURE_VIEWS_YR
 
     df["at_risk_score"] = df.apply(_at_risk_score, axis=1).round(3)
-    df["at_risk_tier"] = df["at_risk_score"].apply(_tier)
+    df["at_risk_tier_rule"] = df["at_risk_score"].apply(_tier)
+
+    # Live churn-model blend (doc 24 §3 / doc 29 §2.3): consume the external
+    # model's scores — never retrain or replace it here. The targeting snapshot
+    # is append-per-day, so these columns also become the durable prediction
+    # history the external table doesn't keep. Degrades to overlay-only if the
+    # external pipeline is unavailable.
+    try:
+        live = predictions.get_latest()
+    except Exception as e:
+        print(f"[targeting] live churn predictions unavailable ({e}) — overlay-only")
+        live = pd.DataFrame(
+            columns=["profile_id", "live_churn_probability", "live_model_flag", "live_critical"]
+        )
+    df = df.merge(live, on="profile_id", how="left")
+    df["live_model_flag"] = df["live_model_flag"].fillna(False).astype(bool)
+    df["live_critical"] = df["live_critical"].fillna(False).astype(bool)
+    df["at_risk_tier"] = [
+        _blend_tier(rule, flag, crit)
+        for rule, flag, crit in zip(
+            df["at_risk_tier_rule"], df["live_model_flag"], df["live_critical"], strict=True
+        )
+    ]
 
     # Pilot pool: non-venue lead-driven + low-exposure (+ not already churning/renewed)
     df["bundle_eligible"] = (
@@ -191,7 +243,8 @@ _OUTPUT_COLUMNS = [
     "first_term", "num_paid_plans_before", "term_months",
     "views_60d", "views_prev_60d", "views_365d", "impressions_60d",
     "show_phone_60d", "days_since_last_view", "exposure_trend", "low_exposure",
-    "at_risk_score", "at_risk_tier", "bundle_eligible", "stats_date",
+    "at_risk_score", "at_risk_tier", "at_risk_tier_rule",
+    "live_churn_probability", "live_model_flag", "bundle_eligible", "stats_date",
 ]
 
 
