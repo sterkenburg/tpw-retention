@@ -246,6 +246,22 @@ def build(experiment_id: str = "stage1_exposure") -> pd.DataFrame:
 
 # --- Holdout enforcement helpers (used by every emitter) -----------------
 
+def enrolled_ids() -> set[str]:
+    """Every profile_id holding an arm in ANY experiment (treatment or control).
+
+    For legacy / off-experiment emitters: they must skip ALL enrolled suppliers —
+    control may never be touched, and treatment may not receive uncontrolled
+    extra touches outside its experiment's lever set (doc 29 §5).
+    """
+    if not client.table_exists(_COHORT_TABLE):
+        return set()
+    df = client.query(
+        f"SELECT DISTINCT profile_id FROM "
+        f"`{client.PROJECT_ID}.{client.DATASET}.{_COHORT_TABLE}`"
+    )
+    return set(df["profile_id"].astype(str))
+
+
 def treatment_ids(experiment_id: str = "stage1_exposure") -> set[str]:
     """profile_ids in the TREATMENT arm — the only suppliers an emitter may act on."""
     if not client.table_exists(_COHORT_TABLE):

@@ -4,14 +4,17 @@ Runs at 7 AM via Cloud Scheduler.
 1. Load data
 2. Calculate supplier stats
 3. Calculate signals (churn, engagement, renewal)
-4. Determine actions
-5. Execute actions (CRM tasks, emails, Slack)
-6. Save everything to BigQuery
+4. Determine actions (LEGACY — gated OFF, see below)
+5. Save everything to BigQuery
+6. Slack summary (aggregate counts only — never names suppliers)
 
-Email flows (renewal prep / re-engagement / monthly results) are wired in but
-run in DRY-RUN by default — they compute and log who would be emailed without
-sending. Set EMAIL_DRY_RUN=false (+ SENDGRID_API_KEY) and configure a supplier
-email source (sources.supplier_email_* in settings.yaml) to send for real.
+The per-supplier emitters in stage 4 (P1 CRM tasks + the deprecated SendGrid
+email flows) PREDATE the holdout system and used to log crm_task intents for
+stage1 CONTROL suppliers (doc 29 §5). They are gated behind
+`legacy_actions.enabled` (settings.yaml, default false): dispatch is owned by
+the directives system (WS-D), which enforces the holdout structurally. If the
+flag is temporarily re-enabled, stage 4 excludes every supplier enrolled in any
+experiment (both arms) via cohort.enrolled_ids().
 """
 
 import sys
@@ -22,11 +25,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import pandas as pd
+import yaml
 
 from actions import crm, emails, flows, slack
 from analytics import projected_value, supplier_stats
 from data import activity, client, leads, suppliers
-from signals import churn_scorer, engagement
+from signals import churn_scorer, cohort, engagement
+
+_CONFIG_PATH = Path(__file__).parent.parent / "config" / "settings.yaml"
+with open(_CONFIG_PATH) as _f:
+    _LEGACY_ON = yaml.safe_load(_f).get("legacy_actions", {}).get("enabled", False)
 
 
 def run():
@@ -85,60 +93,74 @@ def run():
     print("[4/6] Determining actions...")
     actions_taken = []
 
-    # P1 → CRM tasks
-    p1 = signals[signals["priority_tier"] == "P1"]
-    for _, row in p1.iterrows():
-        created = crm.create_retention_task(
-            profile_id=row["profile_id"],
-            profile_name=row["profile_name"],
-            category=row["category"],
-            plan_value=row["plan_value"],
-            plan_end=row["plan_end"],
-            churn_probability=row["churn_probability"],
-            risk_factors=row["risk_factors"],
-            account_manager=row.get("account_manager", ""),
-        )
-        actions_taken.append(
-            {
-                "profile_id": row["profile_id"],
-                "action_type": "crm_task",
-                "action_detail": "P1 retention task",
-                "executed": created,
-                "action_date": pd.Timestamp.now(),
-            }
-        )
-    print(f"        CRM tasks created: {sum(a['executed'] for a in actions_taken)}")
+    if not _LEGACY_ON:
+        print("        Legacy per-supplier emitters OFF (legacy_actions.enabled=false).")
+        print("        Dispatch is owned by the directives system (WS-D, holdout-")
+        print("        enforced); these pre-holdout flows logged crm_task intents for")
+        print("        control suppliers (doc 29 §5). Stats/signals/Slack still run.")
+    else:
+        # Holdout guard: legacy emitters never touch an enrolled supplier (either
+        # arm) — control must stay untouched, and treatment must not receive
+        # uncontrolled extra touches outside its experiment's lever set.
+        enrolled = cohort.enrolled_ids()
+        pool = signals[~signals["profile_id"].astype(str).isin(enrolled)]
+        if len(pool) < len(signals):
+            print(f"        Holdout guard: {len(signals) - len(pool)} enrolled "
+                  f"suppliers excluded from legacy actions")
 
-    # Email flows → renewal prep, re-engagement, monthly results.
-    # Sends are gated by emails.is_dry_run() (default ON): while dry-run, this
-    # computes and logs who *would* be emailed but calls no provider. Going live
-    # = set SENDGRID_API_KEY and EMAIL_DRY_RUN=false. Email addresses come from
-    # the optional source configured in sources.supplier_email_* (none yet, so
-    # email_actions is empty until that feed exists).
-    emailable = signals["email"].apply(flows.is_emailable).sum() if "email" in signals else 0
-    recently_sent = emails.recent_sends()
-    email_actions = flows.determine_email_actions(signals, date.today(), recently_sent)
-    flow_counts = Counter(a.flow for a in email_actions)
+        # P1 → CRM tasks
+        for _, row in pool[pool["priority_tier"] == "P1"].iterrows():
+            created = crm.create_retention_task(
+                profile_id=row["profile_id"],
+                profile_name=row["profile_name"],
+                category=row["category"],
+                plan_value=row["plan_value"],
+                plan_end=row["plan_end"],
+                churn_probability=row["churn_probability"],
+                risk_factors=row["risk_factors"],
+                account_manager=row.get("account_manager", ""),
+            )
+            actions_taken.append(
+                {
+                    "profile_id": row["profile_id"],
+                    "action_type": "crm_task",
+                    "action_detail": "P1 retention task",
+                    "executed": created,
+                    "action_date": pd.Timestamp.now(),
+                }
+            )
+        print(f"        CRM tasks created: {sum(a['executed'] for a in actions_taken)}")
 
-    sent_actions = []
-    for a in email_actions:
-        ok = emails.send(a)
-        actions_taken.append(
-            {
-                "profile_id": a.profile_id,
-                "action_type": f"email:{a.flow}",
-                "action_detail": a.subject,
-                "executed": ok,
-                "action_date": pd.Timestamp.now(),
-            }
-        )
-        if ok:
-            sent_actions.append(a)
-    emails.log_sends(sent_actions)
+        # Email flows → renewal prep, re-engagement, monthly results.
+        # Sends are gated by emails.is_dry_run() (default ON): while dry-run, this
+        # computes and logs who *would* be emailed but calls no provider. Going live
+        # = set SENDGRID_API_KEY and EMAIL_DRY_RUN=false. Email addresses come from
+        # the optional source configured in sources.supplier_email_* (none yet, so
+        # email_actions is empty until that feed exists).
+        emailable = pool["email"].apply(flows.is_emailable).sum() if "email" in pool else 0
+        recently_sent = emails.recent_sends()
+        email_actions = flows.determine_email_actions(pool, date.today(), recently_sent)
+        flow_counts = Counter(a.flow for a in email_actions)
 
-    mode = "DRY-RUN (nothing sent)" if emails.is_dry_run() else f"sent {len(sent_actions)}"
-    print(f"        Emailable suppliers: {emailable}/{len(signals)}")
-    print(f"        Email actions: {len(email_actions)} {dict(flow_counts)} — {mode}")
+        sent_actions = []
+        for a in email_actions:
+            ok = emails.send(a)
+            actions_taken.append(
+                {
+                    "profile_id": a.profile_id,
+                    "action_type": f"email:{a.flow}",
+                    "action_detail": a.subject,
+                    "executed": ok,
+                    "action_date": pd.Timestamp.now(),
+                }
+            )
+            if ok:
+                sent_actions.append(a)
+        emails.log_sends(sent_actions)
+
+        mode = "DRY-RUN (nothing sent)" if emails.is_dry_run() else f"sent {len(sent_actions)}"
+        print(f"        Emailable suppliers: {emailable}/{len(pool)}")
+        print(f"        Email actions: {len(email_actions)} {dict(flow_counts)} — {mode}")
 
     # ------------------------------------------------------------------
     # 5. Save to BigQuery
@@ -214,12 +236,15 @@ def run():
     # 6. Slack summary
     # ------------------------------------------------------------------
     print("[6/6] Posting Slack summary...")
-    p2_value = signals[signals["priority_tier"] == "P2"]["plan_value"].sum()
-    revenue_at_risk = p1["plan_value"].sum() + p2_value
+    # Aggregate reporting over ALL suppliers (counts only, never names) — kept
+    # independent of the gated legacy emitters above.
+    p1_mask = signals["priority_tier"] == "P1"
+    p2_mask = signals["priority_tier"] == "P2"
+    revenue_at_risk = signals[p1_mask]["plan_value"].sum() + signals[p2_mask]["plan_value"].sum()
     slack.send_summary(
         total_suppliers=len(signals),
-        p1_count=len(p1),
-        p2_count=(signals["priority_tier"] == "P2").sum(),
+        p1_count=int(p1_mask.sum()),
+        p2_count=int(p2_mask.sum()),
         p3_count=(signals["priority_tier"] == "P3").sum(),
         revenue_at_risk=revenue_at_risk,
     )
