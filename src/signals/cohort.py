@@ -124,6 +124,10 @@ def _eligible(experiment_id: str) -> pd.DataFrame:
     mode = spec.get("eligibility", "category_bundle")
     if mode == "category_bundle":
         mask = df["bundle_eligible"] & df["category"].isin(spec["categories"])
+        # First-termers belong to the `onboarding` experiment (journey-stage
+        # priority). Excluding them here prevents one supplier holding opposite
+        # arms across experiments, which would contaminate stage1 (doc 29 §3).
+        mask &= ~df["first_term"].fillna(False).astype(bool)
         window = spec["renewal_window_days"]
         if window is not None:
             mask &= df["days_until_renewal"].between(0, window)
