@@ -189,7 +189,38 @@ re-including first-termers.
 > 4. `build_cohort` re-run: **0 re-enrolled** — the exclusion holds end-to-end.
 >
 > Pool impact: 38 of 164 eligible (23%) — first-termers now flow to `onboarding`.
-> The Stage-2 power re-check (item 1, §7) remains open.
+
+**✔ Stage-2 power re-check (run 2026-06-11, live targeting snapshot).** The
+12-month Stage-2 enrollment flow is the current bundle-eligible stock (annual
+terms: all 353 renew within 365d; new sign-ups hitting a *first* renewal are
+excluded by this fix, and second renewals fall outside the window):
+
+| Scenario | n/arm | MDE @80% power (churn 25–35%) |
+|---|---:|---|
+| Doc 18 assumption | ~270 | ~10–11pp (doc 18's claim reproduces ✓) |
+| Live flow, *incl.* first-term | 176 | ~12–13pp |
+| **Live flow, excl. first-term (current spec)** | **115** | **~14–16pp** |
+
+Two findings: (a) the exclusion costs ~2.6pp of MDE (122 of 353 eligible — 35% —
+are first-term, higher than stage1's 23%); (b) **the bigger problem predates the
+exclusion** — the live renewal flow is well under doc 18's ~540/yr assumption, so
+Stage-2 as specced was already underpowered for −10pp. Raising the low-exposure
+threshold alone doesn't fix it (established non-venue actives: 343 below 440
+views/yr, 455 below 660 → at best ~227/arm ≈ ~11pp, while diluting the expected
+effect above the ~330 cliff). Reaching −10pp at the current spec needs ~2.2–2.8
+years of enrollment.
+
+**Recommended Stage-2 design changes (pre-register at Stage-2 kickoff):**
+1. **Program-level primary readout:** stratified renewal analysis pooling the
+   `stage1_exposure` (established) and `onboarding` (first-term) experiments —
+   each has its own randomized holdout, and "does the lifecycle program retain?"
+   is the actual G3 question. First-termers are not lost to measurement; they
+   moved strata.
+2. **Extend enrollment to ~18–24 months** and/or widen the threshold toward the
+   ~440 cliff boundary (343 eligible) — ~18 months at <440 ≈ 257/arm ≈ −10pp.
+3. Keep doc 18's pre-registered leading indicators (renewal-intent/NPS, sustained
+   exposure, engagement) as the early decision inputs — the fixed-N churn readout
+   alone cannot carry a 12-month G3 decision at this pool size.
 
 **Decide before a third experiment ships:** per-experiment salts mean every new
 experiment multiplies collision pairs. The structural alternative is a **single
@@ -259,7 +290,7 @@ Ordered by dependency and value; (1)–(3) are this-repo and unblocked **today**
 
 | # | Build item | Phase served | Owner / blocker | Effort |
 |---|---|---|---|---|
-| 1 | **First-term exclusion** in stage1 eligibility (§3) — **✔ applied 2026-06-11** (code + cohort cleanup + directives rebuild); Stage-2 power re-check still open | retain + onboard | this repo — none | XS |
+| 1 | **First-term exclusion** in stage1 eligibility (§3) — **✔ applied 2026-06-11** (code + cohort cleanup + directives rebuild); **✔ power re-checked** — Stage-2 needs a stratified program-level readout + longer/wider enrollment (§3) | retain + onboard | this repo — none | XS |
 | 2 | **Ended-term feed** → `outcomes` + lapsed targeting rows (§2.5) | recover + measurement | this repo — none (interim `business_development`) | S–M |
 | 3 | **At-risk union** with live model scores (§2.3) + recall backtest once (2) lands | retain | this repo — read access to `churn_prediction` outputs | S |
 | 4 | **Elastic spike YOO-228** → boost build (doc 22) | retain | **Elastic team — open, P0 critical path** | M |
