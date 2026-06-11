@@ -42,6 +42,7 @@ A supplier **lifecycle** strategy for The Perfect Wedding (theperfectwedding.nl)
 | 26 | [26_spike5_scraper_cohort_trigger_answer.md](26_spike5_scraper_cohort_trigger_answer.md) | **G0 spike answer (YOO-232)** — scraper cohort trigger + opt-in model |
 | 27 | [27_spike6_invoice_profile_join_answer.md](27_spike6_invoice_profile_join_answer.md) | **G0 spike answer (YOO-233)** — Moneybird invoice → `profile_id` join (98.6% coverage) |
 | 28 | [28_retention_flow_and_levers.md](28_retention_flow_and_levers.md) | **Full lifecycle flow + lever catalog** — segmentation into lifecycle populations/stages; 6 built levers (incl. onboarding + winback) + 4 proposed |
+| 29 | [29_lifecycle_journey_refinement.md](29_lifecycle_journey_refinement.md) | **Journey refinement + re-sequenced build plan** — stage-by-stage gaps (onboard/engage/retain/recover); fixes the stage1↔onboarding eligibility collision, the engagement-measurement hole, winback/outcomes feed, sales recap pull-forward |
 
 ## The Core Insight
 
