@@ -112,6 +112,17 @@ directives:
   # paid premium inventory (paid-product guardrail, docs/strategy/18 Lever 1).
   boost_layer: "free"
 
+# Legacy pre-holdout emitters in the 7AM daily pipeline (P1 CRM tasks + the
+# deprecated SendGrid email flows). OFF: the pipeline still computes stats and
+# signals and posts the aggregate Slack summary, but emits NO per-supplier
+# actions — dispatch is owned by the directives system (WS-D), which enforces
+# the holdout structurally. These flows predate the holdout and were logging
+# crm_task intents for stage1 CONTROL suppliers (doc 29 §5). If temporarily
+# re-enabled, the pipeline excludes every supplier enrolled in any experiment
+# (both arms) so the pilot stays measurable.
+legacy_actions:
+  enabled: false
+
 # Notifications
 notifications:
   sms_enabled: true

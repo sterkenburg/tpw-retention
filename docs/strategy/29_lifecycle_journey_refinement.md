@@ -277,7 +277,7 @@ Two-part fix:
 | Item | Why | Effort |
 |---|---|---|
 | **Tests for the holdout machinery** — stable-hash determinism + locked-salt reuse (`cohort.py`), leak `AssertionError` (`directives.generate`), audit scoping (`contamination_audit`), DiD math on a synthetic panel (`_two_arm`) | The entire experimental claim rests on these; today they have **zero tests** | S |
-| **Gate or retire legacy emitters** — `jobs/daily_pipeline.py` CRM tasks + SendGrid email flows predate the holdout and bypass `cohort.filter_treatment()` | If ever switched on they contaminate every experiment; SendGrid path is already deprecated (doc 19) | S |
+| **Gate or retire legacy emitters** — `jobs/daily_pipeline.py` CRM tasks + SendGrid email flows predate the holdout and bypass `cohort.filter_treatment()`. **✔ Gated 2026-06-11**: this risk materialized live — the 7AM job logged inert (`executed=false`) `crm_task` intents for 8 stage1-control suppliers. Stage 4 is now behind `legacy_actions.enabled` (default false); if re-enabled it excludes all enrolled suppliers (`cohort.enrolled_ids()`, both arms). The 36 inert intent rows (20 treatment / 16 control) were deleted; audit reads **CLEAN**. *Requires a Cloud Run image redeploy to take effect at 7AM.* | If ever switched on they contaminate every experiment; SendGrid path is already deprecated (doc 19) | S |
 | **`outcomes` table** (§2.5) | Stage-2 primary endpoint; backtest labels | S–M (one feed) |
 | **Persist `supplier_journey`** (stage per supplier per snapshot) | Stage-transition funnel: dwell time, onboarding→healthy conversion, at_risk save-rate — the per-stage KPIs in §6 need history, and it is the natural hook for the event-trigger path and the §4 arbiter (doc 28 §4) | S |
 | **Wire `sources.supplier_email_*`** to `companies_profiles.profile_email` | Recipient resolution for every Bird lever (doc 25 §1) | XS |
@@ -314,7 +314,7 @@ Ordered by dependency and value; (1)–(3) are this-repo and unblocked **today**
 | 7 | **Dashboard login telemetry → BQ**; interim UTM engagement endpoint pre-registered (§4) | engage | dashboard team / this repo | S |
 | 8 | **Minimal sales value-recap** (§2.4) | retain (renewal) | this repo (`web/`) | S–M |
 | 9 | **Frequency cap / arbiter** across experiments (doc 28 §4; journey stage = arbiter) | all | this repo — before a 2nd experiment dispatches | M |
-| 10 | **Holdout tests + legacy-emitter gating** (§5) | all | this repo — none | S |
+| 10 | **Holdout tests + legacy-emitter gating** (§5) — emitter gating **✔ done 2026-06-11** (audit CLEAN); holdout tests still open | all | this repo — none | S |
 | 11 | Persist `supplier_journey`; per-stage KPI report (§6) | all | this repo | S |
 | 12 | Post-G1 BAU decisions (pre-register now): healthy-stage monthly email + renewal-window boost/recap, each with permanent holdout (§2.2, §2.4) | engage + retain | product | — |
 
