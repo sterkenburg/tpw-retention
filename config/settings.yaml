@@ -83,7 +83,7 @@ thresholds:
 # Email settings
 email:
   from_name: "ThePerfectWedding"
-  from_address: "leveranciers@theperfectwedding.nl"
+  from_address: "partners@theperfectwedding.nl"
   monthly_send_day: 1          # 1st of month
   monthly_send_hour: 9
   # Master safety switch. When true (default), the pipeline computes and logs

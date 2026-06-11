@@ -27,7 +27,7 @@ with open(_CONFIG_PATH) as _f:
 
 _EMAIL_CFG = _CONFIG.get("email", {})
 _SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
-_FROM_EMAIL = _EMAIL_CFG.get("from_address", "leveranciers@theperfectwedding.nl")
+_FROM_EMAIL = _EMAIL_CFG.get("from_address", "partners@theperfectwedding.nl")
 _FROM_NAME = _EMAIL_CFG.get("from_name", "ThePerfectWedding")
 _DEDUP_DAYS = _EMAIL_CFG.get(
     "dedup_days",
