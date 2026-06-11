@@ -14,6 +14,10 @@ with the europe-west3 business data (`business_development` via
                        features via Spike 3 / YOO-230)
   - bundle_eligible    non-venue lead-driven + low-exposure (the pilot pool)
 
+Rows cover active paid suppliers (suppliers.get_current) PLUS the recently-lapsed
+(suppliers.get_lapsed, renewal_status='lapsed') so the journey `lapsed` stage and
+the winback experiment have a real population (ended-terms feed, doc 29 §2.5).
+
 Cross-region by design: exposure is EU, business data is europe-west3 → joined in
 pandas. Output is written to the US `retention` dataset (like supplier_stats_daily).
 
@@ -43,9 +47,14 @@ LOW_EXPOSURE_VIEWS_YR = 330
 # renewal_status values that mean the supplier is still in a paid relationship —
 # 'active' (current term) or 'already_renewed' (a future paid term exists). Anything
 # else is genuinely lapsed (the winback pool). Defined as an allowlist so unknown
-# future churned markers default to lapsed, not retained. NOTE: supplier_targeting is
-# built from ACTIVE suppliers, so no lapsed rows appear yet (doc 28 churned-feed item).
+# future churned markers default to lapsed, not retained. Lapsed rows come from
+# suppliers.get_lapsed() (renewal_status='lapsed', ended-terms feed — doc 29 §2.5).
 RETAINED_STATUSES = {"active", "already_renewed"}
+
+# How far back a lapsed supplier stays in targeting (months since their last paid
+# term ended). Matches directives.LEVERS['winback'] params.max_lapsed_months —
+# beyond this, winback is no longer the right motion.
+WINBACK_LAPSED_MONTHS = 6
 
 VENUE_CATEGORY = "Trouwlocaties"
 # Wrong-model retail: couples don't shortlist-and-inquire → exposure lever N/A.
@@ -131,8 +140,14 @@ def _tier(score: float) -> str:
 
 
 def calculate() -> pd.DataFrame:
-    """Build the per-supplier targeting table for currently-active paid suppliers."""
+    """Build the per-supplier targeting table: active paid suppliers + the
+    recently-lapsed (winback pool, renewal_status='lapsed')."""
     sup = suppliers.get_current()
+    lapsed = suppliers.get_lapsed(months_back=WINBACK_LAPSED_MONTHS)
+    # Active wins if a profile somehow appears in both feeds (the 30-day grace
+    # boundary in suppliers.py makes the two windows disjoint by construction).
+    sup = pd.concat([sup, lapsed], ignore_index=True)
+    sup = sup.drop_duplicates(subset="profile_id", keep="first")
     sup["profile_id"] = sup["profile_id"].astype(str)
     exp = _exposure_features()
 

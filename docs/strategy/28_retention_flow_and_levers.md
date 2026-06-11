@@ -201,10 +201,13 @@ when the owning decision (§5) is greenlit. Built lever entries for the two new 
    217 onboarding / 175 at-risk / 63 renewal-window / 989 healthy / 0 lapsed. ✔
 
 **Open (owner action before these populate / go live):**
-- **Winback churned-supplier source.** `supplier_targeting` is built from **active**
-  suppliers (`suppliers.get_current()`), so the `churned` eligibility returns empty
-  until a lapsed-supplier feed is wired in. *Honest no-op today, not fabricated rows.*
-  → needs a `renewal_status != 'active'` (or recently-lapsed) source in targeting.
+- ~~**Winback churned-supplier source.**~~ **✔ Resolved 2026-06-11** — the
+  ended-terms feed (`suppliers.get_lapsed()`, doc 29 §2.5) adds recently-lapsed
+  suppliers (≤6 mo) to targeting with `renewal_status='lapsed'`; journey `lapsed`
+  stage and winback eligibility populate (138 live). Enrolment is deliberately
+  deferred until the winback sequence is designed. The same feed builds the
+  `outcomes` table (`jobs/build_outcomes.py`) — renewal labels for Stage-2 and
+  the doc-24 backtest.
 - **Onboarding sequence design.** The day-0/30/60/90 step content + Bird templates.
 - **Offer lever (`#7`).** Confirm right-pricing-via-offer is in pilot scope (it has a
   **billing side-effect**); it needs **Moneybird ARR** (doc 27, gated on Drive scope)

@@ -74,9 +74,10 @@ EXPERIMENTS = {
         "renewal_window_days": None,
         "salt": "onboarding_v1",
     },
-    # Reactivation cohort — lapsed suppliers. Eligibility returns empty until the
-    # churned-supplier feed is wired into targeting (doc 28 follow-up); registered
-    # now so the lever + holdout machinery are in place and testable.
+    # Reactivation cohort — lapsed suppliers, fed by suppliers.get_lapsed() via
+    # targeting (renewal_status='lapsed', ended-terms feed — doc 29 §2.5). Enrol
+    # deliberately (build_cohort.py winback) only when the winback sequence is
+    # ready to launch — enrolees age out of the ≤6-month window while gated.
     "winback": {
         "cohort": "recently_churned",
         "eligibility": "churned",
@@ -137,9 +138,9 @@ def _eligible(experiment_id: str) -> pd.DataFrame:
             mask &= df["category"].isin(spec["categories"])
     elif mode == "churned":
         # Lapsed = renewal_status NOT in the retained allowlist. 'already_renewed' is
-        # retained (future term), so it is NOT winback. supplier_targeting is built
-        # from active suppliers today → empty until the churned feed lands (doc 28).
-        # Honest no-op, not fabricated rows.
+        # retained (future term), so it is NOT winback. Rows arrive via
+        # suppliers.get_lapsed() in targeting (≤ WINBACK_LAPSED_MONTHS since the
+        # last paid term ended — ended-terms feed, doc 29 §2.5).
         if "renewal_status" in df.columns:
             mask = ~df["renewal_status"].isin(targeting.RETAINED_STATUSES)
         else:
