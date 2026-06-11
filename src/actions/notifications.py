@@ -4,13 +4,12 @@ Triggered by webhook or event, not by daily pipeline.
 """
 
 import os
-from datetime import datetime
 
 import httpx
 
 _MESSAGEBIRD_API_KEY = os.environ.get("MESSAGEBIRD_API_KEY", "")
 _SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
-_FROM_EMAIL = "leveranciers@theperfectwedding.nl"
+_FROM_EMAIL = "partners@theperfectwedding.nl"
 
 
 def send_instant_lead_email(
@@ -43,7 +42,7 @@ def send_instant_lead_email(
     <p><strong>Lead Details:</strong></p>
     <ul>
         <li>Trouwdatum: {event_str}</li>
-        <li>Aantal gasten: {guest_str}</li>
+        <li>Aantal gasten: {guests_str}</li>
         <li>Regio: {region_str}</li>
         <li>Bericht: {message_str}</li>
     </ul>
